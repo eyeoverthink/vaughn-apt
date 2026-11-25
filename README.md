@@ -59,12 +59,29 @@ Rather than generic placeholders, key hero surfaces were cropped and rectified d
 | :---: | :---: |
 | ![SfM Floorplan](scan/floorplan_analysis.png) | ![Room Zone Comparison](scan/rooms_floorplan_comparison.png) |
 
-### 3D Gaussian Splat (Brush on RTX 5070)
-Trained locally with [ArthurBrussee/brush](https://github.com/ArthurBrussee/brush) (`scan/splat/apartment_splat.ply`):
+### 3D Gaussian Splat (Brush on RTX 5070) — v1 vs v2 Fix
 
-![Gaussian Splat Render](scan/splat/eval_8000/frame_0125_v2_0023.png)
+The initial v1 splat was blurry and hazy because it trained for only 8,000 steps on 98 sparse `SIMPLE_RADIAL` (distorted) frames. For **v2**, the entire 3DGS pipeline was rebuilt from the ground up:
 
-> **Note (v1 baseline):** The initial 8,000-step splat trained on sparse portrait `SIMPLE_RADIAL` frames exhibits blur and edge floaters — see the upcoming v2 commit for the dense pinhole-undistorted, 25,000-step, floater-pruned & gravity-aligned Gaussian Splat upgrade.
+| Metric | v1 Baseline (Blurry) | v2 Fixed (Crisp) |
+| :--- | :--- | :--- |
+| **Registered Views** | 98 frames (2 fps, mixed) | **209 ultra-sharp frames** (4 fps, Laplacian ≥ 111.8) |
+| **Camera Model** | `SIMPLE_RADIAL` (un-rectified) | **Exact `PINHOLE`** via `pycolmap.undistort_images` |
+| **Initial 3D SfM Points** | 14,246 pts (2,500 SIFT/img) | **60,743 pts** (4,096 SIFT/img — **4.3× denser**) |
+| **Training Steps / Res** | 8,000 steps @ 1024 px | **25,000 steps @ 1280 px** (SSIM 0.25, SH deg 2) |
+| **Post-Processing** | None (tilted, hazy floaters) | **Floater/fog pruned** (1.2M → **383,351 crisp splats**, 58.3 MB) + **RANSAC gravity-aligned** (positions & quaternions) |
+
+#### Before (v1) vs After (v2) Comparison
+![Before vs After 3DGS Comparison](renders/splat_before_after.jpg)
+
+#### v2 3D Gaussian Splat Gallery (Rendered from `apartment_splat.ply`)
+![v2 3DGS Showcase Gallery](renders/splat_v2_showcase.jpg)
+
+| Kitchen, Music Nook & Dining Lookback (3DGS v2) |
+| :---: |
+| ![3DGS v2 Lookback](scan/splat_v2/eval_25000/dense_0211_v2_0145.png) |
+
+> **Tip for 100% Wall-to-Wall Perfection:** Because the original handheld videos were shot vertically (9:16) with fast doorway pans, edge areas with single-angle coverage (such as right next to the kitchen island) still have minor streaks. Shooting a slow **0.5× ultrawide landscape** loop pausing 1 second at every doorway and re-running `scripts/build_crisp_3dgs_dataset.py` + `brush_app.exe` + `scripts/postprocess_splat.py` will eliminate those remaining edge streaks too.
 
 ---
 
@@ -144,8 +161,10 @@ vaughn-apt/
 │       └── eval_8000/              # Rendered splat evaluation frames
 ├── scripts/
 │   ├── extract_frames.py           # FFmpeg + OpenCV Laplacian blur filter
-│   ├── run_sfm.py                  # pycolmap 4.2.1 SIFT + SfM reconstruction
+│   ├── run_sfm.py                  # pycolmap 4.2.1 full-apartment multi-zone SfM
 │   ├── align_scan_to_level.py      # RANSAC floor-plane alignment & metric scaling
+│   ├── build_crisp_3dgs_dataset.py # Dense 4096-SIFT SfM + zero-distortion PINHOLE undistorter
+│   ├── postprocess_splat.py        # Binary PLY floater pruning & quaternion gravity alignment
 │   └── build_apartment_blender.py  # Reproducible Blender 5.3 level generator
 ├── textures/                       # Real cropped apartment & skyline textures
 └── web/
@@ -170,6 +189,11 @@ uv pip install --python .venv\Scripts\python.exe pycolmap opencv-python-headless
 .venv\Scripts\python.exe scripts\align_scan_to_level.py
 & "C:\Program Files\Blender Foundation\Blender 5.3\blender.exe" --background --python scripts\build_apartment_blender.py
 
-# 3. Launch web walkthrough
+# 3. Rebuild crisp v2 3D Gaussian Splat (requires Brush binary in tools/brush/)
+.venv\Scripts\python.exe scripts\build_crisp_3dgs_dataset.py
+tools\brush\brush_app.exe scan\colmap_v2_pinhole --total-steps 25000 --refine-every 150 --growth-stop-iter 15000 --growth-grad-threshold 0.00003 --max-splats 1200000 --max-resolution 1280 --sh-degree 2 --ssim-weight 0.25 --export-every 25000 --export-path scan\splat_v2 --export-name apartment_splat_raw.ply
+.venv\Scripts\python.exe scripts\postprocess_splat.py
+
+# 4. Launch web walkthrough & 3DGS viewer
 python -m http.server 8765
 ```

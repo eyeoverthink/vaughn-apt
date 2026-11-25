@@ -13,6 +13,9 @@ frames/raw/
 frames/sharp/
 frames/reference/tour_sheet_*.jpg
 scan/colmap_dataset/
+scan/colmap_v2_work/
+scan/colmap_v2_pinhole/
+scan/splat_v2/apartment_splat_raw.ply
 scan/database.db
 scan/sparse/
 scan/splat/eval_4000/

@@ -3,30 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Photorealistic 3D Gaussian Splat Viewer — Apartment Scan</title>
+  <title>Photorealistic 3D Gaussian Splat Viewer — vaughn-apt (v2 Crisp)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0e16; color: #f0f6fc; font-family: 'Segoe UI', system-ui, sans-serif; }
     #splat-root { width: 100vw; height: 100vh; }
     .topbar {
       position: fixed; top: 14px; left: 14px; right: 14px; z-index: 20;
-      display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none;
     }
     .panel {
-      pointer-events: auto; background: rgba(12, 17, 27, 0.84); backdrop-filter: blur(8px);
-      border: 1px solid rgba(88, 213, 255, 0.3); border-radius: 12px; padding: 10px 16px;
-      display: flex; align-items: center; gap: 14px;
+      pointer-events: auto; background: rgba(12, 17, 27, 0.86); backdrop-filter: blur(8px);
+      border: 1px solid rgba(88, 213, 255, 0.32); border-radius: 12px; padding: 11px 16px;
+      display: flex; flex-direction: column; gap: 6px;
     }
-    .title { font-size: 14px; font-weight: 700; color: #58d5ff; }
+    .panel-row { flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .title { font-size: 13px; font-weight: 700; color: #58d5ff; letter-spacing: 0.6px; }
     .sub { font-size: 12px; color: #a9b8cc; }
-    a.btn {
-      text-decoration: none; background: linear-gradient(135deg, #2596ff, #00c4a7);
-      color: #06121b; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 13px;
+    .badge {
+      display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 999px;
+      background: rgba(126, 231, 135, 0.14); color: #7ee787; border: 1px solid rgba(126, 231, 135, 0.4);
+      font-weight: 700; width: fit-content;
     }
+    a.btn, button.cam-btn {
+      text-decoration: none; border: none; cursor: pointer; font-weight: 600; font-size: 12px;
+      padding: 7px 12px; border-radius: 8px; transition: filter 0.12s, background 0.15s;
+    }
+    a.btn { background: linear-gradient(135deg, #2596ff, #00c4a7); color: #06121b; font-weight: 700; }
+    button.cam-btn { background: rgba(255,255,255,0.09); color: #e2ecf8; border: 1px solid rgba(255,255,255,0.16); }
+    button.cam-btn:hover { background: rgba(88, 213, 255, 0.22); border-color: #58d5ff; }
     #status {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 20;
-      background: rgba(12, 17, 27, 0.88); border: 1px solid rgba(255,255,255,0.16);
-      padding: 9px 16px; border-radius: 999px; font-size: 13px; color: #7ee787;
+      background: rgba(12, 17, 27, 0.90); border: 1px solid rgba(88,213,255,0.3);
+      padding: 9px 18px; border-radius: 999px; font-size: 13px; color: #7ee787;
     }
   </style>
   <script type="importmap">
@@ -41,16 +50,18 @@
 <body>
   <div class="topbar">
     <div class="panel">
-      <div>
-        <div class="title">PHOTOREALISTIC 3D GAUSSIAN SPLAT (BRUSH / RTX 5070)</div>
-        <div class="sub">Drag to orbit · Right-drag to pan · Scroll to zoom · W/A/S/D to fly</div>
-      </div>
+      <div class="badge">v2 CRISP · 25K STEPS · PINHOLE UNDISTORTED · FLOATER-PRUNED</div>
+      <div class="title">PHOTOREALISTIC 3D GAUSSIAN SPLAT — VAUGHN-APT</div>
+      <div class="sub">Left-drag orbit · Right-drag pan · Scroll zoom · Click anywhere to re-center pivot</div>
     </div>
-    <div class="panel">
-      <a class="btn" href="index.html">← Back to Blender Escape Room</a>
+    <div class="panel panel-row">
+      <button class="cam-btn" data-cam="overview">Living Overview</button>
+      <button class="cam-btn" data-cam="close">Center Floor</button>
+      <button class="cam-btn" data-cam="wide">Wide Angle</button>
+      <a class="btn" href="index.html">← Blender Escape Room</a>
     </div>
   </div>
-  <div id="status">Loading trained 3D Gaussian Splat (apartment_splat.ply)...</div>
+  <div id="status">Loading v2 gravity-aligned 3D Gaussian Splat (apartment_splat.ply)...</div>
   <div id="splat-root"></div>
 
   <script type="module">
@@ -59,26 +70,43 @@
     const status = document.getElementById('status');
     const viewer = new GaussianSplats3D.Viewer({
       rootElement: document.getElementById('splat-root'),
-      cameraUp: [0, -1, 0],
-      initialCameraPosition: [0, -0.5, -2.5],
-      initialCameraLookAt: [0, 0, 1.5],
+      cameraUp: [0, 1, 0],
+      initialCameraPosition: [0.0, 0.15, 0.35],
+      initialCameraLookAt: [0.0, -0.05, -2.0],
       sharedMemoryForWorkers: false,
       selfDrivenMode: true,
+      antialiased: true,
     });
 
-    viewer.addSplatScene('../scan/splat/apartment_splat.ply', {
-      splatAlphaRemovalThreshold: 5,
+    const PRESETS = {
+      overview: { pos: [0.0, 0.15, 0.35], target: [0.0, -0.05, -2.0] },
+      close: { pos: [-0.6, 0.10, -0.4], target: [0.4, -0.15, -2.2] },
+      wide: { pos: [1.2, 0.35, 1.4], target: [-0.2, -0.10, -1.8] },
+    };
+
+    document.querySelectorAll('.cam-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const p = PRESETS[btn.dataset.cam];
+        if (!p || !viewer.camera || !viewer.controls) return;
+        viewer.camera.position.set(...p.pos);
+        viewer.controls.target.set(...p.target);
+        viewer.controls.update();
+      });
+    });
+
+    viewer.addSplatScene('../scan/splat/apartment_splat.ply?v=2', {
+      splatAlphaRemovalThreshold: 12,
       showLoadingUI: true,
     })
       .then(() => {
         viewer.start();
-        status.textContent = '3D Gaussian Splat Ready! Drag to orbit · Scroll to zoom · WASD to move';
-        setTimeout(() => { status.style.opacity = '0.75'; }, 4000);
+        status.textContent = 'v2 3D Gaussian Splat Ready! Drag to orbit · Scroll to zoom · Right-drag to pan';
+        setTimeout(() => { status.style.opacity = '0.78'; }, 4500);
       })
       .catch((err) => {
         console.error(err);
         status.style.color = '#ff7b72';
-        status.textContent = 'Could not load PLY in WebGL — try launch_brush_splat.bat for native RTX 5070 viewer!';
+        status.textContent = 'WebGL load error — try launch_brush_splat.bat for native RTX 5070 viewer.';
       });
   </script>
 </body>
