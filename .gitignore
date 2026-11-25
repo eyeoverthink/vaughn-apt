@@ -1,0 +1,29 @@
+# Python virtual environment & caches
+.venv/
+__pycache__/
+*.pyc
+
+# Large downloaded binaries & archives (re-download via README instructions)
+tools/
+*.zip
+*.exe
+
+# Intermediate raw/extracted video frames & COLMAP SQLite database
+frames/raw/
+frames/sharp/
+frames/reference/tour_sheet_*.jpg
+scan/colmap_dataset/
+scan/database.db
+scan/sparse/
+scan/splat/eval_4000/
+scan/splat/eval_10000/
+scan/splat/eval_15000/
+scan/splat/eval_20000/
+
+# Blender backup files
+blender/*.blend1
+blender/*.blend2
+
+# OS noise
+Thumbs.db
+.DS_Store

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apartment 3D Escape Room &amp; Walkthrough</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="viewport"></div>
+
+  <!-- Binoculars Vignette Overlay -->
+  <div id="bino-overlay" class="bino-overlay hidden">
+    <div class="bino-hud">
+      <div class="bino-title">OPTICAL ZOOM 4.5× — DOWNTOWN SKYLINE SCAN</div>
+      <div class="bino-target">ROOFTOP BEACON DETECTED: <strong>FREQ-400 → DIGIT #1 = 4</strong></div>
+      <div class="bino-hint">Press <kbd>E</kbd> or <kbd>Esc</kbd> to lower binoculars</div>
+    </div>
+  </div>
+
+  <!-- Start / Pause Overlay -->
+  <div id="overlay" class="overlay">
+    <div class="overlay-card">
+      <div class="badge">HYBRID 3DGS + BLENDER 5.3 ESCAPE ROOM</div>
+      <h1>Apartment Walkthrough &amp; Escape Room</h1>
+      <p class="subtitle">
+        Reconstructed from <code>IMG_6804.MOV</code> &amp; <code>IMG_6805.MOV</code> with real apartment textures,
+        playable MIDI synth puzzle, animated 3D printer, UV blacklight clues, and a trained RTX 5070 Gaussian Splat.
+      </p>
+      <div class="controls-grid">
+        <div><kbd>W A S D</kbd> Move (<kbd>Shift</kbd> Sprint)</div>
+        <div><kbd>Mouse</kbd> Look Around</div>
+        <div><kbd>E</kbd> Interact / Open Doors</div>
+        <div><kbd>F</kbd> Flashlight / <kbd>U</kbd> UV Blacklight</div>
+        <div><kbd>P</kbd> Toggle 3D Scan Cloud</div>
+        <div><kbd>1 – 4</kbd> Room Teleports</div>
+      </div>
+      <div class="overlay-actions">
+        <button id="btn-play" class="btn-primary">Enter Escape Room (First Person)</button>
+        <a href="splat.html" class="btn-secondary" style="text-decoration:none;display:flex;align-items:center;">Photoreal 3DGS Viewer ↗</a>
+      </div>
+      <div id="load-status" class="load-status">Loading upgraded Blender 5.3 GLB...</div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hud hidden">
+    <div class="hud-top-left">
+      <div class="hud-title">APARTMENT ESCAPE</div>
+      <div id="room-label" class="room-label">Corner Living Room</div>
+      <div id="timer-label" class="timer-label">00:00</div>
+      <div id="clues-panel" class="clues-panel">
+        <div class="clues-header">ESCAPE DIGITS (<span id="clue-count">0</span>/4)</div>
+        <ul id="clue-list">
+          <li data-clue="laptop">☐ #1 Bistro Laptop &amp; Binoculars</li>
+          <li data-clue="music">☐ #2 MIDI Synth Chord (Music Nook)</li>
+          <li data-clue="printer">☐ #3 3D Printer UV Lens (Studio)</li>
+          <li data-clue="whiteboard">☐ #4 UV Blacklight Whiteboard</li>
+        </ul>
+      </div>
+      <div class="inv-panel">
+        <div class="inv-header">INVENTORY</div>
+        <div id="inv-items" class="inv-items"><span class="inv-empty">Empty — explore rooms</span></div>
+      </div>
+    </div>
+
+    <div class="hud-top-right">
+      <canvas id="minimap" width="170" height="230"></canvas>
+      <div class="hud-toggles">
+        <span id="scan-badge" class="pill">3D Scan [P]: OFF</span>
+        <span id="flash-badge" class="pill">Light [F/U]: OFF</span>
+      </div>
+    </div>
+
+    <div id="reticle" class="reticle"></div>
+    <div id="interact-prompt" class="interact-prompt hidden">Press <kbd>E</kbd> to interact</div>
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <!-- Clue Inspector Modal -->
+  <div id="clue-modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-tag" id="modal-tag">CLUE DISCOVERED</div>
+      <h2 id="modal-title">Title</h2>
+      <p id="modal-body"></p>
+      <div id="modal-code" class="modal-code"></div>
+      <button id="modal-close" class="btn-primary">Continue [Esc / Click]</button>
+    </div>
+  </div>
+
+  <!-- Interactive MIDI Synth Puzzle Modal -->
+  <div id="midi-modal" class="modal hidden">
+    <div class="modal-card midi-card">
+      <div class="modal-tag">MUSIC NOOK — 61-KEY MIDI SYNTHESIZER</div>
+      <h2>Play the C-Major-7 Arpeggio</h2>
+      <p>Mixer LCD hint: strike the 4 ascending chord tones <strong>C → E → G → B</strong> to unlock Track 2's keypad digit.</p>
+      <div id="midi-seq" class="midi-seq">Sequence: _ · _ · _ · _</div>
+      <div class="piano-keys">
+        <button class="pkey" data-note="C" data-freq="261.63">C</button>
+        <button class="pkey" data-note="D" data-freq="293.66">D</button>
+        <button class="pkey" data-note="E" data-freq="329.63">E</button>
+        <button class="pkey" data-note="F" data-freq="349.23">F</button>
+        <button class="pkey" data-note="G" data-freq="392.00">G</button>
+        <button class="pkey" data-note="A" data-freq="440.00">A</button>
+        <button class="pkey" data-note="B" data-freq="493.88">B</button>
+        <button class="pkey" data-note="C5" data-freq="523.25">C5</button>
+      </div>
+      <div id="midi-status" class="keypad-msg">Click keys to play live Web Audio synth tones</div>
+      <button id="midi-close" class="btn-secondary" style="width:100%;">Step Back</button>
+    </div>
+  </div>
+
+  <!-- Yale Smart Keypad Modal -->
+  <div id="keypad-modal" class="modal hidden">
+    <div class="modal-card keypad-card">
+      <div class="modal-tag">FRONT DOOR — YALE SMART LOCK</div>
+      <h2>Enter 4-Digit Escape PIN</h2>
+      <div id="keypad-display" class="keypad-display">_ _ _ _</div>
+      <div id="keypad-msg" class="keypad-msg">Solve all 4 puzzles around the apartment</div>
+      <div class="keypad-grid">
+        <button class="kp-btn" data-k="1">1</button>
+        <button class="kp-btn" data-k="2">2</button>
+        <button class="kp-btn" data-k="3">3</button>
+        <button class="kp-btn" data-k="4">4</button>
+        <button class="kp-btn" data-k="5">5</button>
+        <button class="kp-btn" data-k="6">6</button>
+        <button class="kp-btn" data-k="7">7</button>
+        <button class="kp-btn" data-k="8">8</button>
+        <button class="kp-btn" data-k="9">9</button>
+        <button class="kp-btn kp-action" data-k="C">CLR</button>
+        <button class="kp-btn" data-k="0">0</button>
+        <button class="kp-btn kp-action" data-k="OK">OK</button>
+      </div>
+      <button id="keypad-close" class="btn-secondary" style="margin-top:12px;width:100%;">Step Back</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
