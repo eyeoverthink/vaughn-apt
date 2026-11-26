@@ -15,7 +15,7 @@ Beyond the Escape Room and 3D Gaussian Splat, `vaughn-apt` is evolving into a **
 | Phase | Milestone | Status |
 | :--- | :--- | :--- |
 | **Phase 0** | 3D Video Reconstruction, Crisp 25k-step 3DGS, Modular Blender 5.3 Level, `.glb`/`.fbx`, Escape Room | ✅ Complete |
-| **Phase 1** | Spatial Home OS MVP (`home_graph.json`, `apt://` shelf/drawer/closet inventory + files, fly-to search, TV media, stereo, live whiteboard) | 🚧 Up Next |
+| **Phase 1** | Spatial Home OS MVP (`data/home_graph.json`, `scripts/home_os_server.py`, `web/home_os.html` — unified `apt://` shelf/drawer/closet atoms + bits, natural-language command & BOM search, fly-to spotlight, Owner/Guest privacy view, Living Room TV, persistent Stereo, live Whiteboard) | ✅ Complete |
 | **Phase 2** | Local Filesystem Bridge & Vision Photo-to-Inventory Drawer Capture | ⏳ Planned |
 | **Phase 3** | Cyber-Physical Hardware Bridge (3D Printer Farm, Smart Lamps / MQTT, WLED Pick-to-Light, Raspberry Pis) | ⏳ Planned |
 | **Phase 4** | Room-Aware AI Agent & BOM Feasibility Planner | ⏳ Planned |

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vaughn-apt — Spatial Home OS &amp; Cyber-Physical Reality Twin</title>
+  <link rel="stylesheet" href="home_os.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="viewport"></div>
+
+  <!-- Top OS Bar: Brand + Global Spatial Command Bar + Mode Switcher -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <div>
+        <div class="brand-title">vaughn-apt · REALITY OS</div>
+        <div class="brand-sub" id="stats-line">Loading Home Graph...</div>
+      </div>
+    </div>
+
+    <div class="cmd-wrap">
+      <span class="cmd-icon">⌘</span>
+      <input
+        id="cmd-input"
+        type="text"
+        autocomplete="off"
+        placeholder="Search or tell the apartment: 'basys' · 'circuit' · 'put ESP32 x4 on studio shelf 2' · 'bom smart lamp'"
+      />
+      <kbd class="cmd-kbd">/</kbd>
+      <div id="cmd-results" class="cmd-results hidden"></div>
+    </div>
+
+    <nav class="mode-nav">
+      <a class="nav-pill active" href="home_os.html">Home OS</a>
+      <a class="nav-pill" href="index.html">Escape Room</a>
+      <a class="nav-pill" href="splat.html">3DGS Splat</a>
+    </nav>
+  </header>
+
+  <!-- Left Spatial Directory Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="side-header">
+      <span>APARTMENT ZONES</span>
+      <div class="view-toggles">
+        <button id="btn-guest-mode" class="mini-btn" title="Toggle Owner vs Guest Privacy View">Owner View</button>
+      </div>
+    </div>
+    <div id="zone-list" class="zone-list"></div>
+
+    <div class="side-footer">
+      <div class="quick-row">
+        <button id="btn-cam-iso" class="mini-btn">Dollhouse</button>
+        <button id="btn-cam-living" class="mini-btn">Living</button>
+        <button id="btn-cam-studio" class="mini-btn">Studio</button>
+        <button id="btn-scan-toggle" class="mini-btn">3D Scan</button>
+      </div>
+      <div class="quick-row" style="margin-top:6px;">
+        <button class="mini-btn mood-btn active" data-mood="afternoon">☀ Sun</button>
+        <button class="mini-btn mood-btn" data-mood="studio">⚡ Build</button>
+        <button class="mini-btn mood-btn" data-mood="lounge">🌙 Lounge</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Persistent Mini Stereo Bar (Bottom Left) -->
+  <div id="stereo-bar" class="stereo-bar">
+    <div class="stereo-left">
+      <button id="stereo-play-btn" class="stereo-btn">▶</button>
+      <div>
+        <div class="stereo-title">Music Nook Stereo</div>
+        <div id="stereo-track" class="stereo-sub">Ready · Ambient Lo-Fi Synth</div>
+      </div>
+    </div>
+    <select id="stereo-mode" class="stereo-select">
+      <option value="lofi">Lo-Fi Chords</option>
+      <option value="focus">Deep Focus Pad</option>
+      <option value="cosmic">Midnight Synth</option>
+    </select>
+    <input id="stereo-vol" type="range" min="0" max="100" value="35" title="Stereo Volume" />
+  </div>
+
+  <!-- Right Spatial Inspector Drawer -->
+  <aside id="inspector" class="inspector hidden">
+    <div class="insp-head">
+      <div>
+        <div class="insp-badges">
+          <span id="insp-room" class="tag-room">Room</span>
+          <span id="insp-privacy" class="tag-priv">PRIVATE</span>
+        </div>
+        <h2 id="insp-title">Zone Title</h2>
+        <div id="insp-uri" class="insp-uri">apt://...</div>
+      </div>
+      <button id="insp-close" class="icon-close" title="Close Inspector">✕</button>
+    </div>
+
+    <div class="insp-body">
+      <!-- Dynamic Special Panel (TV / Whiteboard / Printers / Routines / Guests) -->
+      <div id="insp-special" class="special-box hidden"></div>
+
+      <!-- Physical Reality (Atoms) -->
+      <section class="insp-section">
+        <div class="sec-head">
+          <span>PHYSICAL REALITY (ATOMS)</span>
+          <span id="atoms-count" class="count-pill">0</span>
+        </div>
+        <ul id="atoms-list" class="item-list"></ul>
+        <form id="form-add-item" class="inline-form">
+          <input id="input-item-name" type="text" placeholder="Add hardware/part (e.g. Arduino Due)" required />
+          <input id="input-item-qty" type="number" min="1" value="1" class="qty-in" />
+          <button type="submit" class="btn-add">+ Add</button>
+        </form>
+      </section>
+
+      <!-- Digital Files (Bits) -->
+      <section class="insp-section">
+        <div class="sec-head">
+          <span>DIGITAL FILES &amp; LINKS (BITS)</span>
+          <span id="bits-count" class="count-pill">0</span>
+        </div>
+        <ul id="bits-list" class="item-list"></ul>
+        <form id="form-add-file" class="inline-form">
+          <input id="input-file-name" type="text" placeholder="File name (e.g. motor.kicad_sch)" required />
+          <input id="input-file-path" type="text" placeholder="Local path or URL" />
+          <button type="submit" class="btn-add">+ Save</button>
+        </form>
+      </section>
+
+      <!-- Spatial Notes / Whiteboard -->
+      <section class="insp-section">
+        <div class="sec-head">
+          <span>SPATIAL NOTES</span>
+          <button id="btn-save-notes" class="mini-btn accent">Save Notes</button>
+        </div>
+        <textarea id="insp-notes" rows="4" placeholder="Notes pinned to this exact spot..."></textarea>
+      </section>
+    </div>
+  </aside>
+
+  <!-- Living Room TV / Image Lightbox Modal -->
+  <div id="media-modal" class="media-modal hidden">
+    <div class="media-card">
+      <div class="media-head">
+        <span id="media-title">Living Room TV</span>
+        <button id="media-close" class="icon-close">✕</button>
+      </div>
+      <div id="media-content" class="media-content"></div>
+    </div>
+  </div>
+
+  <!-- Toast feedback -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="home_os.js"></script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+{
+  "version": "1.0",
+  "apartment": "vaughn-apt",
+  "owner": "Vaughn",
+  "lighting_mood": "afternoon",
+  "nodes": [
+    {
+      "id": "apt://studio/white-cube-shelf/shelf-1",
+      "room": "Studio / Extra Bedroom",
+      "label": "White Cube Shelf — Top Shelf (#1)",
+      "mesh_ref": "Off_CubeShelf",
+      "position_threejs": [-2.65, 0.78, 5.62],
+      "camera_view": { "pos": [-2.4, 1.45, 3.85], "look": [-2.65, 0.72, 5.62] },
+      "privacy": "private",
+      "category": "hardware",
+      "color": "#58d5ff",
+      "physical_items": [
+        { "name": "Raspberry Pi 5 (8GB) + Active Cooler", "qty": 2, "tags": ["raspberry pi", "rpi", "linux", "sbc"] },
+        { "name": "Raspberry Pi 4B & Pi Zero 2 W", "qty": 4, "tags": ["raspberry pi", "rpi", "iot", "sbc"] },
+        { "name": "MicroSD Cards & USB-C Power Supplies", "qty": 8, "tags": ["storage", "power", "rpi"] }
+      ],
+      "digital_files": [
+        { "name": "pi_cluster_ssh_hosts.md", "path": "docs/REALITY_OS_ARCHITECTURE.md", "type": "doc" }
+      ],
+      "notes": "Single-board computers & Linux edge nodes.",
+      "live_devices": [
+        { "type": "wled_pick_to_light", "label": "Shelf #1 LED Segment", "status": "standby", "endpoint": "" }
+      ]
+    },
+    {
+      "id": "apt://studio/white-cube-shelf/shelf-2",
+      "room": "Studio / Extra Bedroom",
+      "label": "White Cube Shelf — 2nd Shelf from Top (#2)",
+      "mesh_ref": "Off_CubeShelf",
+      "position_threejs": [-2.65, 0.48, 5.62],
+      "camera_view": { "pos": [-2.35, 1.25, 3.85], "look": [-2.65, 0.48, 5.62] },
+      "privacy": "private",
+      "category": "hardware",
+      "color": "#58d5ff",
+      "physical_items": [
+        { "name": "Digilent Basys 3 Artix-7 FPGA Board", "qty": 1, "tags": ["basys", "fpga", "verilog", "vivado", "circuit"] },
+        { "name": "Arduino Uno / Mega 2560 / Nano Assortment", "qty": 10, "tags": ["arduino", "mcu", "avr", "circuit"] },
+        { "name": "Solderless Breadboards & Jumper Kits", "qty": 8, "tags": ["breadboard", "prototyping", "circuit"] },
+        { "name": "IC Chip Trays (555, 74HC595, LM358, L293D)", "qty": 45, "tags": ["ic", "chips", "logic", "circuit"] },
+        { "name": "Sensor Pack (Ultrasonic, DHT22, IMU, PIR, Hall)", "qty": 24, "tags": ["sensors", "iot", "arduino"] }
+      ],
+      "digital_files": [
+        { "name": "circuit_drawing.kicad_sch", "path": "docs/REALITY_OS_ARCHITECTURE.md", "type": "schematic" },
+        { "name": "basys3_master_constraints.xdc", "path": "docs/REALITY_OS_ARCHITECTURE.md", "type": "fpga" },
+        { "name": "arduino_sensor_pinouts.pdf", "path": "README.md", "type": "datasheet" }
+      ],
+      "notes": "Core electronics, Basys FPGA, Arduinos, breadboards, ICs & circuit drawings live together right here.",
+      "live_devices": [
+        { "type": "wled_pick_to_light", "label": "Shelf #2 Pick-to-Light LED", "status": "ready", "endpoint": "" }
+      ]
+    },
+    {
+      "id": "apt://studio/white-cube-shelf/shelf-3",
+      "room": "Studio / Extra Bedroom",
+      "label": "White Cube Shelf — Lower Shelf (#3)",
+      "mesh_ref": "Off_CubeShelf",
+      "position_threejs": [-2.65, 0.20, 5.62],
+      "camera_view": { "pos": [-2.35, 1.05, 3.85], "look": [-2.65, 0.20, 5.62] },
+      "privacy": "private",
+      "category": "hardware",
+      "color": "#58d5ff",
+      "physical_items": [
+        { "name": "ESP32-S3 / ESP8266 Wi-Fi & BLE Modules", "qty": 9, "tags": ["esp32", "wifi", "bluetooth", "wled", "smart lamp"] },
+        { "name": "WS2812B Addressable LED Strips & Smart Lamp Drivers", "qty": 5, "tags": ["led", "wled", "smart lamp", "mosfet"] },
+        { "name": "MOSFETs, Relays, Buck Converters & Bench PSU Cables", "qty": 20, "tags": ["power", "mosfet", "relay", "electronics"] }
+      ],
+      "digital_files": [
+        { "name": "wled_shelf_pick_to_light.json", "path": "docs/REALITY_OS_ARCHITECTURE.md", "type": "config" }
+      ],
+      "notes": "Wireless MCUs, LEDs, smart-lamp power electronics, and pick-to-light strips.",
+      "live_devices": []
+    },
+    {
+      "id": "apt://studio/west-desk",
+      "room": "Studio / Extra Bedroom",
+      "label": "Studio Electronics & CAD Workbench (West Desk)",
+      "mesh_ref": "Off_WestDesk_Top",
+      "position_threejs": [-3.40, 0.92, 3.35],
+      "camera_view": { "pos": [-1.85, 1.50, 3.35], "look": [-3.50, 1.05, 3.35] },
+      "privacy": "private",
+      "category": "creation",
+      "color": "#a371f7",
+      "physical_items": [
+        { "name": "Stacked Dual Monitors + Soldering & Logic Analyzer", "qty": 1, "tags": ["workbench", "soldering", "creation", "cad"] },
+        { "name": "Digital Multimeter & Oscilloscope Probes", "qty": 2, "tags": ["tools", "electronics", "test"] }
+      ],
+      "digital_files": [
+        { "name": "apartment_escape_room.blend", "path": "blender/apartment_escape_room.blend", "type": "blender" },
+        { "name": "build_apartment_blender.py", "path": "scripts/build_apartment_blender.py", "type": "code" }
+      ],
+      "notes": "Primary creation desk — Blender 5.3, KiCad, Verilog, firmware flashing.",
+      "live_devices": [
+        { "type": "smart_lamp", "label": "Studio Desk Smart Lamp", "status": "on", "endpoint": "" }
+      ]
+    },
+    {
+      "id": "apt://studio/printers",
+      "room": "Studio / Extra Bedroom",
+      "label": "3D Printer Farm (10× Printers)",
+      "mesh_ref": "Off_3DPrinter1_Base",
+      "position_threejs": [-3.47, 1.15, 4.45],
+      "camera_view": { "pos": [-1.95, 1.48, 4.35], "look": [-3.47, 1.12, 4.45] },
+      "privacy": "private",
+      "category": "hardware",
+      "color": "#00d4aa",
+      "physical_items": [
+        { "name": "3D Printer Fleet (Printers #1–#10)", "qty": 10, "tags": ["3d printer", "pla", "petg", "klipper", "bambu", "enclosure"] },
+        { "name": "Filament Spools (Cyan PLA, Matte Black PETG, TPU)", "qty": 16, "tags": ["filament", "spool", "3d printer"] },
+        { "name": "Nozzles (0.4mm/0.6mm), Build Plates & Calipers", "qty": 12, "tags": ["3d printer", "tools"] }
+      ],
+      "digital_files": [
+        { "name": "apartment_escape_room.glb", "path": "exports/apartment_escape_room.glb", "type": "3d" },
+        { "name": "enclosure_mounts_stl_folder", "path": "exports", "type": "folder" }
+      ],
+      "notes": "Connect Moonraker / Klipper / OctoPrint / Bambu LAN endpoints here for live print farm telemetry.",
+      "live_devices": [
+        { "type": "3d_printer", "label": "Printer #1 (Cyan PLA)", "status": "idle", "endpoint": "" },
+        { "type": "3d_printer", "label": "Printer #2 (Black PETG)", "status": "idle", "endpoint": "" }
+      ]
+    },
+    {
+      "id": "apt://studio/east-desk",
+      "room": "Studio / Extra Bedroom",
+      "label": "Secondary Dual-Monitor Desk (East Studio)",
+      "mesh_ref": "Off_EastDesk_Top",
+      "position_threejs": [-0.75, 0.92, 3.88],
+      "camera_view": { "pos": [-2.2, 1.48, 3.85], "look": [-0.65, 0.98, 3.88] },
+      "privacy": "private",
+      "category": "creation",
+      "color": "#a371f7",
+      "physical_items": [
+        { "name": "Dual-Monitor Dev & Homelab Station", "qty": 1, "tags": ["computer", "homelab", "server", "code"] },
+        { "name": "Network Switch & Ethernet Patch Cables", "qty": 1, "tags": ["network", "ethernet", "pi"] }
+      ],
+      "digital_files": [
+        { "name": "home_os_server.py", "path": "scripts/home_os_server.py", "type": "code" }
+      ],
+      "notes": "Homelab management, SSH to Raspberry Pis, local AI agent hosting.",
+      "live_devices": []
+    },
+    {
+      "id": "apt://hall/closet",
+      "room": "Entry Hallway",
+      "label": "Hallway Closet — Important Files Vault",
+      "mesh_ref": "Door_LouveredCloset",
+      "position_threejs": [0.30, 1.25, 3.72],
+      "camera_view": { "pos": [0.35, 1.55, 2.25], "look": [0.30, 1.20, 3.78] },
+      "privacy": "private",
+      "category": "vault",
+      "color": "#ff7b72",
+      "physical_items": [
+        { "name": "Fireproof Document Binder (Lease, IDs, Insurance)", "qty": 1, "tags": ["important", "vault", "documents", "taxes"] },
+        { "name": "Cold Backup SSDs & Hardware Keys", "qty": 3, "tags": ["backup", "vault", "security", "drive"] }
+      ],
+      "digital_files": [
+        { "name": "REALITY_OS_ARCHITECTURE.md", "path": "docs/REALITY_OS_ARCHITECTURE.md", "type": "vault" },
+        { "name": "apartment_layout_stats.json", "path": "scan/layout_stats.json", "type": "data" }
+      ],
+      "notes": "High-trust private vault. Never visible to Guests unless explicitly unlocked.",
+      "live_devices": []
+    },
+    {
+      "id": "apt://hall/front-door",
+      "room": "Entry Hallway",
+      "label": "Front Door — Guests, Email & Comms Inbox",
+      "mesh_ref": "Door_FrontEntry",
+      "position_threejs": [4.05, 1.25, 2.95],
+      "camera_view": { "pos": [2.25, 1.55, 2.95], "look": [4.15, 1.22, 2.95] },
+      "privacy": "public",
+      "category": "guests",
+      "color": "#7ee787",
+      "physical_items": [
+        { "name": "Yale Smart Keypad Lock", "qty": 1, "tags": ["lock", "smart home", "front door", "guests"] },
+        { "name": "Entryway Tufted Bench, Vinyls & Guitar Case", "qty": 1, "tags": ["entryway", "vinyl", "guitar"] }
+      ],
+      "digital_files": [
+        { "name": "Guest Invite Link (Living Room)", "path": "http://localhost:8765/web/home_os.html?guest=1", "type": "link" }
+      ],
+      "notes": "Doorman Agent triages incoming emails, texts, DMs, and live guest drop-ins here.",
+      "live_devices": [
+        { "type": "smart_lock", "label": "Yale Front Door Lock", "status": "locked", "endpoint": "" }
+      ]
+    },
+    {
+      "id": "apt://hall/whiteboard",
+      "room": "East Hallway",
+      "label": "Hallway Whiteboard — Shared Memory & Tasks",
+      "mesh_ref": "Mus_Whiteboard_Surface",
+      "position_threejs": [1.50, 1.52, -2.55],
+      "camera_view": { "pos": [0.05, 1.55, -2.55], "look": [1.55, 1.52, -2.55] },
+      "privacy": "shared",
+      "category": "whiteboard",
+      "color": "#f0c674",
+      "physical_items": [
+        { "name": "Magnetic Dry-Erase Whiteboard & Markers", "qty": 1, "tags": ["whiteboard", "tasks", "notes", "memory"] }
+      ],
+      "digital_files": [],
+      "notes": "## Today's Priorities\n- [x] 3D scan & crisp 25k Gaussian Splat of apartment\n- [x] Spatial Home OS architecture pushed to GitHub\n- [ ] Catalog Studio Shelf #2 Arduinos & Basys 3 schematics\n- [ ] Wire ESP32 WLED strip for Pick-to-Light shelves\n- [ ] Connect 3D printer farm Moonraker/OctoPrint status",
+      "live_devices": []
+    },
+    {
+      "id": "apt://music/console",
+      "room": "Music Production Nook",
+      "label": "Music Station — Stereo, MIDI & Bluetooth Audio",
+      "mesh_ref": "Mus_MIDI_Body",
+      "position_threejs": [1.85, 1.02, -1.35],
+      "camera_view": { "pos": [0.35, 1.48, -1.35], "look": [1.95, 0.98, -1.35] },
+      "privacy": "public",
+      "category": "stereo",
+      "color": "#ff9e64",
+      "physical_items": [
+        { "name": "61-Key MIDI Controller Keyboard", "qty": 1, "tags": ["music", "midi", "synth", "stereo"] },
+        { "name": "DJ Controller, Audio Mixer & Condenser Mic", "qty": 3, "tags": ["music", "audio", "mixer", "mic"] },
+        { "name": "Studio Reference Monitors (Pair)", "qty": 2, "tags": ["stereo", "speakers", "bluetooth", "audio"] }
+      ],
+      "digital_files": [
+        { "name": "Ambient Lo-Fi Synth (Built-In Stereo)", "path": "stereo://lofi", "type": "audio" },
+        { "name": "Deep Focus Pad (Built-In Stereo)", "path": "stereo://focus", "type": "audio" }
+      ],
+      "notes": "Play persistent background music across all rooms or route audio via Bluetooth.",
+      "live_devices": [
+        { "type": "stereo", "label": "Living & Music Nook Stereo", "status": "ready", "endpoint": "" }
+      ]
+    },
+    {
+      "id": "apt://dining/wall-art",
+      "room": "Dining Area",
+      "label": "Dining Wall — Pinned Favorites & Visual Media",
+      "mesh_ref": "Din_WallArt_CanvasTop",
+      "position_threejs": [-3.76, 1.98, -1.15],
+      "camera_view": { "pos": [-1.85, 1.65, -1.15], "look": [-3.82, 1.92, -1.15] },
+      "privacy": "public",
+      "category": "favorites",
+      "color": "#f778ba",
+      "physical_items": [
+        { "name": "Framed Tattooed-Hands Pop-Art Canvas", "qty": 1, "tags": ["art", "wall", "favorites", "media"] }
+      ],
+      "digital_files": [
+        { "name": "Living Room Render Preview", "path": "renders/preview_living.png", "type": "image" },
+        { "name": "v2 Gaussian Splat Showcase", "path": "renders/splat_v2_showcase.jpg", "type": "image" },
+        { "name": "Real Stitched Downtown Skyline", "path": "textures/skyline_clean.jpg", "type": "image" }
+      ],
+      "notes": "Hang favorite photos, vision boards, and quick-reference visual pins right on your walls.",
+      "live_devices": []
+    },
+    {
+      "id": "apt://living/tv",
+      "room": "Corner Living Room",
+      "label": "Living Room TV — YouTube, Reddit & Media Deck",
+      "mesh_ref": "Liv_TV_Screen",
+      "position_threejs": [1.30, 1.22, -4.92],
+      "camera_view": { "pos": [-1.45, 1.38, -4.92], "look": [1.35, 1.18, -4.92] },
+      "privacy": "public",
+      "category": "tv",
+      "color": "#ff9e64",
+      "physical_items": [
+        { "name": "Large Flat-Screen Smart TV & Industrial Console", "qty": 1, "tags": ["tv", "media", "youtube", "reddit", "cable"] }
+      ],
+      "digital_files": [
+        { "name": "Lofi Hip Hop Radio (YouTube)", "path": "https://www.youtube.com/embed/jfKfPfyJRdk", "type": "youtube" },
+        { "name": "Blender & 3DGS Showcase (YouTube)", "path": "https://www.youtube.com/embed/T_kXYHRv8pA", "type": "youtube" },
+        { "name": "Reddit r/electronics", "path": "https://www.reddit.com/r/electronics/", "type": "web" },
+        { "name": "Reddit r/3Dprinting", "path": "https://www.reddit.com/r/3Dprinting/", "type": "web" }
+      ],
+      "notes": "Watch YouTube, browse Reddit feeds, or co-watch media with guests on the sectional.",
+      "live_devices": [
+        { "type": "smart_tv", "label": "Living Room TV", "status": "standby", "endpoint": "" }
+      ]
+    },
+    {
+      "id": "apt://living/bistro",
+      "room": "Corner Living Room",
+      "label": "Skyline Bistro Table — World Dashboard & Overview",
+      "mesh_ref": "Liv_BistroLaptop_Base",
+      "position_threejs": [-1.15, 1.12, -7.02],
+      "camera_view": { "pos": [-0.55, 1.55, -5.25], "look": [-1.15, 1.12, -7.02] },
+      "privacy": "public",
+      "category": "dashboard",
+      "color": "#58d5ff",
+      "physical_items": [
+        { "name": "High-Top Bistro Table, Laptop & Windowsill Binoculars", "qty": 1, "tags": ["laptop", "dashboard", "skyline", "overview"] }
+      ],
+      "digital_files": [
+        { "name": "GitHub Repo — eyeoverthink/vaughn-apt", "path": "https://github.com/eyeoverthink/vaughn-apt", "type": "link" }
+      ],
+      "notes": "High-level apartment overview, inventory counts, and external world links.",
+      "live_devices": []
+    },
+    {
+      "id": "apt://kitchen/coffee",
+      "room": "Kitchen",
+      "label": "Kitchen Coffee Station — Daily Routines & Scenes",
+      "mesh_ref": "Kit_CoffeeMaker",
+      "position_threejs": [-3.48, 1.12, -0.54],
+      "camera_view": { "pos": [-1.65, 1.55, -0.65], "look": [-3.48, 1.10, -0.54] },
+      "privacy": "public",
+      "category": "routines",
+      "color": "#f0c674",
+      "physical_items": [
+        { "name": "Coffee Maker, Espresso Setup & Kitchen Appliances", "qty": 1, "tags": ["coffee", "routines", "kitchen", "automation"] }
+      ],
+      "digital_files": [],
+      "notes": "One-click apartment scenes: Afternoon Sun, Studio Build Mode, or Late-Night Lounge.",
+      "live_devices": [
+        { "type": "smart_lamp", "label": "Kitchen Peninsula Pendants", "status": "on", "endpoint": "" }
+      ]
+    }
+  ]
+}
