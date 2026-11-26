@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
 const viewport = document.getElementById('viewport');
 const statsLine = document.getElementById('stats-line');
@@ -107,6 +108,7 @@ function applyMood(mood) {
 // ---------------------------------------------------------------------------
 // Load Apartment GLB + Live Custom Wall Art Texture Swap + COLMAP Overlay
 // ---------------------------------------------------------------------------
+let ceilingMesh = null;
 let wallArtMesh = null;
 let printerHeadMesh = null;
 let printerSweepUntil = 0;
@@ -131,7 +133,7 @@ new GLTFLoader().load('../exports/apartment_escape_room.glb', (gltf) => {
         c.material.opacity = 0.14;
         c.material.depthWrite = false;
       }
-      if (c.name === 'Ceiling_Main') c.visible = false;
+      if (c.name === 'Ceiling_Main') { ceilingMesh = c; c.visible = false; }
       if (c.name === 'Off_3DPrinter1_Head') printerHeadMesh = c;
       if (c.name === 'Din_WallArt_CanvasTop') {
         wallArtMesh = c;
@@ -849,9 +851,155 @@ function toggleScanCloud() {
   showToast(scanVisible ? 'COLMAP 3D Video Scan Overlay: ON' : 'COLMAP 3D Video Scan Overlay: OFF', 1800);
 }
 document.getElementById('btn-scan-toggle').addEventListener('click', toggleScanCloud);
-document.getElementById('btn-cam-iso').addEventListener('click', () => flyCameraTo([2.4, 8.8, 3.8], [-0.6, 0.8, -0.5]));
-document.getElementById('btn-cam-living').addEventListener('click', () => flyCameraTo([0.9, 2.2, -1.6], [-2.0, 1.0, -5.8]));
-document.getElementById('btn-cam-studio').addEventListener('click', () => flyCameraTo([-0.9, 2.4, 2.4], [-2.9, 0.9, 4.8]));
+document.getElementById('btn-cam-iso').addEventListener('click', () => {
+  if (walkMode) exitWalkMode();
+  flyCameraTo([2.4, 8.8, 3.8], [-0.6, 0.8, -0.5]);
+});
+document.getElementById('btn-cam-studio').addEventListener('click', () => {
+  if (walkMode) exitWalkMode();
+  flyCameraTo([-0.9, 2.4, 2.4], [-2.9, 0.9, 4.8]);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 6: Seamless First-Person Walk Mode [V], Voice Commands [🎙], & Setup
+// ---------------------------------------------------------------------------
+const fpControls = new PointerLockControls(camera, document.body);
+const walkHud = document.getElementById('walk-hud');
+const walkPrompt = document.getElementById('walk-prompt');
+const walkKeys = {};
+let walkMode = false;
+
+function enterWalkMode() {
+  walkMode = true;
+  flyAnim = null;
+  controls.enabled = false;
+  if (ceilingMesh) ceilingMesh.visible = true;
+  camera.position.set(-0.6, 1.62, -3.5);
+  camera.lookAt(-1.8, 1.35, -6.2);
+  walkHud.classList.remove('hidden');
+  document.getElementById('btn-walk-mode').textContent = '🏠 Dollhouse [V]';
+  fpControls.lock();
+}
+
+function exitWalkMode() {
+  walkMode = false;
+  if (fpControls.isLocked) fpControls.unlock();
+  walkHud.classList.add('hidden');
+  if (ceilingMesh) ceilingMesh.visible = false;
+  controls.enabled = true;
+  document.getElementById('btn-walk-mode').textContent = '🚶 Walk [V]';
+}
+
+fpControls.addEventListener('unlock', () => {
+  if (walkMode) exitWalkMode();
+});
+
+document.getElementById('btn-walk-mode').addEventListener('click', () => {
+  if (walkMode) exitWalkMode();
+  else enterWalkMode();
+});
+
+window.addEventListener('keydown', (e) => {
+  walkKeys[e.code] = true;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (e.code === 'KeyV') {
+    e.preventDefault();
+    if (walkMode) exitWalkMode();
+    else enterWalkMode();
+  }
+  if (walkMode && e.code === 'KeyE') {
+    const nearest = findNearestNodeToCamera();
+    if (nearest) {
+      exitWalkMode();
+      selectNode(nearest.id, false);
+    }
+  }
+});
+window.addEventListener('keyup', (e) => { walkKeys[e.code] = false; });
+
+function findNearestNodeToCamera() {
+  let best = null;
+  let bestD = 2.4;
+  const p = camera.position;
+  for (const n of homeGraph.nodes) {
+    if (guestMode && n.privacy === 'private') continue;
+    const d = p.distanceTo(new THREE.Vector3(...n.position_threejs));
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  return best;
+}
+
+// Voice Command Recognition (Web Speech API)
+const btnVoice = document.getElementById('btn-voice');
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRec) {
+  const rec = new SpeechRec();
+  rec.lang = 'en-US';
+  rec.interimResults = false;
+  btnVoice.addEventListener('click', () => {
+    btnVoice.classList.add('listening');
+    showToast('🎙 Listening... speak a command like "where is basys" or "put LED strip on studio shelf 3"', 4000);
+    try { rec.start(); } catch (_) {}
+  });
+  rec.onresult = (ev) => {
+    const spoken = ev.results[0][0].transcript;
+    cmdInput.value = spoken;
+    runCommand(spoken);
+  };
+  rec.onend = () => btnVoice.classList.remove('listening');
+  rec.onerror = () => { btnVoice.classList.remove('listening'); showToast('Voice input stopped — check browser microphone permissions.'); };
+} else {
+  btnVoice.addEventListener('click', () => showToast('Web Speech API works best in Chrome or Edge.'));
+}
+
+// Settings, Gemini API Key, Hardware Poll & Graph Export Modal
+const settingsModal = document.getElementById('settings-modal');
+const geminiStatusEl = document.getElementById('gemini-status');
+const hwPollList = document.getElementById('hw-poll-list');
+
+document.getElementById('btn-settings').addEventListener('click', async () => {
+  settingsModal.classList.remove('hidden');
+  try {
+    const h = await fetch('/api/health').then((r) => r.json());
+    geminiStatusEl.textContent = h.gemini_enabled ? 'Gemini 2.5 Active ✓' : 'Local Offline Mode';
+  } catch (_) {}
+});
+document.getElementById('settings-close').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+document.getElementById('form-gemini-key').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const key = document.getElementById('input-gemini-key').value.trim();
+  const r = await apiPost('/api/config/gemini', { api_key: key });
+  document.getElementById('input-gemini-key').value = '';
+  geminiStatusEl.textContent = r.gemini_enabled ? 'Gemini 2.5 Active ✓' : 'Local Offline Mode';
+  showToast(r.gemini_enabled ? 'Saved GEMINI_API_KEY to local .env (gitignored)!' : 'Cleared key — running in offline local mode.');
+});
+
+document.getElementById('btn-poll-hw').addEventListener('click', async () => {
+  hwPollList.innerHTML = '<li class="item-row"><div class="item-sub">Polling LAN devices...</div></li>';
+  const r = await fetch('/api/hardware/poll').then((x) => x.json());
+  hwPollList.innerHTML = '';
+  if (!r.devices?.length) {
+    hwPollList.innerHTML = '<li class="item-row"><div class="item-sub">No LAN IPs linked yet. Click any shelf or printer and add an IP in "Live Hardware Bridge".</div></li>';
+    return;
+  }
+  for (const d of r.devices) {
+    const li = document.createElement('li');
+    li.className = 'item-row';
+    li.innerHTML = `<div class="item-main"><div class="item-name">${d.status === 'online' ? '🟢' : '🔴'} ${d.label}</div><div class="item-sub">${d.type} · ${d.detail || d.status}</div></div>`;
+    hwPollList.appendChild(li);
+  }
+});
+
+document.getElementById('btn-export-graph').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(homeGraph, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vaughn_apt_home_graph_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  showToast('Exported home_graph.json backup!');
+});
 
 document.querySelectorAll('.mood-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -1173,6 +1321,7 @@ window.addEventListener('resize', () => {
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
   for (const m of pinMeshes) {
     m.position.y = m.userData.baseY + Math.sin(t * 2.4 + m.userData.baseY * 4) * 0.03;
@@ -1188,14 +1337,35 @@ function animate() {
   if (printerHeadMesh && performance.now() < printerSweepUntil) {
     printerHeadMesh.position.z = 4.15 + Math.sin(t * 20) * 0.13;
   }
-  if (flyAnim) {
-    const u = Math.min(1, (performance.now() - flyAnim.t0) / flyAnim.dur);
-    const e = 1 - Math.pow(1 - u, 3);
-    camera.position.lerpVectors(flyAnim.startPos, flyAnim.endPos, e);
-    controls.target.lerpVectors(flyAnim.startLook, flyAnim.endLook, e);
-    if (u >= 1) flyAnim = null;
+  if (walkMode && fpControls.isLocked) {
+    const spd = (walkKeys['ShiftLeft'] || walkKeys['ShiftRight']) ? 4.2 : 2.5;
+    let fwd = 0, right = 0;
+    if (walkKeys['KeyW'] || walkKeys['ArrowUp']) fwd += 1;
+    if (walkKeys['KeyS'] || walkKeys['ArrowDown']) fwd -= 1;
+    if (walkKeys['KeyD'] || walkKeys['ArrowRight']) right += 1;
+    if (walkKeys['KeyA'] || walkKeys['ArrowLeft']) right -= 1;
+    if (fwd || right) {
+      const len = Math.hypot(fwd, right);
+      fpControls.moveForward((fwd / len) * spd * dt);
+      fpControls.moveRight((right / len) * spd * dt);
+      camera.position.x = Math.max(-3.65, Math.min(3.95, camera.position.x));
+      camera.position.z = Math.max(-7.25, Math.min(5.75, camera.position.z));
+      camera.position.y = 1.62;
+    }
+    const near = findNearestNodeToCamera();
+    walkPrompt.innerHTML = near
+      ? `Press <kbd>E</kbd> — Inspect <strong>${near.label}</strong> · <kbd>Esc</kbd> Dollhouse`
+      : `WASD to walk · Mouse to look · <kbd>E</kbd> Inspect nearest zone · <kbd>Esc</kbd> Dollhouse`;
+  } else {
+    if (flyAnim) {
+      const u = Math.min(1, (performance.now() - flyAnim.t0) / flyAnim.dur);
+      const e = 1 - Math.pow(1 - u, 3);
+      camera.position.lerpVectors(flyAnim.startPos, flyAnim.endPos, e);
+      controls.target.lerpVectors(flyAnim.startLook, flyAnim.endLook, e);
+      if (u >= 1) flyAnim = null;
+    }
+    controls.update();
   }
-  controls.update();
   renderer.render(scene, camera);
 }
 animate();

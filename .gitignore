@@ -27,6 +27,9 @@ scan/splat/eval_20000/
 blender/*.blend1
 blender/*.blend2
 
+# Secrets / local environment keys
+.env
+
 # OS noise
 Thumbs.db
 .DS_Store

@@ -20,9 +20,54 @@ from urllib.parse import parse_qs, urlparse
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 GRAPH_PATH = PROJECT_DIR / "data" / "home_graph.json"
+ENV_PATH = PROJECT_DIR / ".env"
 SHELF_PHOTOS_DIR = PROJECT_DIR / "data" / "shelf_photos"
 CUSTOM_ART_DIR = PROJECT_DIR / "textures" / "custom"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
+
+
+def get_gemini_key() -> str:
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if key:
+        return key
+    if ENV_PATH.exists():
+        for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("GEMINI_API_KEY="):
+                return line.split("=", 1)[1].strip().strip("'\"")
+    return ""
+
+
+def save_gemini_key(key: str) -> None:
+    key = key.strip()
+    os.environ["GEMINI_API_KEY"] = key
+    ENV_PATH.write_text(f"GEMINI_API_KEY={key}\n", encoding="utf-8")
+
+
+def poll_configured_hardware(graph: dict) -> list[dict]:
+    """Poll any nodes with real LAN endpoints configured (printers, WLED, lamps) with short timeouts."""
+    results = []
+    for n in graph.get("nodes", []):
+        for idx, dev in enumerate(n.get("live_devices", [])):
+            ep = (dev.get("endpoint") or "").strip().rstrip("/")
+            if not ep:
+                continue
+            status = "online"
+            detail = ""
+            try:
+                if dev.get("type") == "3d_printer":
+                    r = trigger_hardware_device(dev, "status")
+                    status = "online" if r.get("ok") else "offline"
+                    detail = r.get("message", "")
+                else:
+                    req = urllib.request.Request(ep, method="GET")
+                    with urllib.request.urlopen(req, timeout=1.5) as resp:
+                        detail = f"HTTP {resp.status}"
+            except Exception as exc:
+                status = "offline"
+                detail = str(exc)[:60]
+            results.append({"node_id": n["id"], "index": idx, "label": dev.get("label"), "type": dev.get("type"), "status": status, "detail": detail})
+    return results
 
 # Live in-memory Phase 5 Multiplayer Presence, Lounge Chat, Synced TV & Guest Permissions
 PRESENCE: dict[str, dict] = {}
@@ -236,7 +281,7 @@ def browse_local_folder(folder_str: str) -> dict:
 
 
 def analyze_drawer_photo_vision(b64_data: str, mime: str) -> list[dict]:
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    api_key = get_gemini_key()
     if not api_key:
         return []
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
@@ -320,7 +365,7 @@ def run_spatial_agent(graph: dict, message: str, current_node_id: str | None) ->
             "engine": "local-spatial",
         }
 
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    api_key = get_gemini_key()
     if api_key:
         compact_nodes = [{"id": n["id"], "room": n["room"], "label": n["label"], "items": [f"{i['name']} x{i.get('qty',1)}" for i in n.get("physical_items", [])], "files": [f["name"] for f in n.get("digital_files", [])]} for n in graph["nodes"]]
         sys_prompt = f"You are the Spatial Home OS Agent inside Vaughn's 3D apartment (vaughn-apt). Reference exact rooms, shelves, and apt:// URIs.\nCurrent node: {current_node_id}\nHome Graph: {json.dumps(compact_nodes)}\nUser: {msg}"
@@ -397,7 +442,9 @@ class HomeOSHandler(SimpleHTTPRequestHandler):
             g["studio_unlocked"] = GUEST_ROOM_ACCESS.get("studio_unlocked", False)
             return self.send_json(g)
         if parsed.path == "/api/health":
-            return self.send_json({"ok": True, "service": "vaughn-apt-home-os", "version": "phase-5-complete", "gemini_enabled": bool(os.environ.get("GEMINI_API_KEY"))})
+            return self.send_json({"ok": True, "service": "vaughn-apt-home-os", "version": "phase-6-polished", "gemini_enabled": bool(get_gemini_key())})
+        if parsed.path == "/api/hardware/poll":
+            return self.send_json({"ok": True, "devices": poll_configured_hardware(load_graph())})
         if parsed.path == "/api/fs/list":
             return self.send_json(browse_local_folder(qs.get("path", [""])[0]))
         if parsed.path == "/api/presence":
@@ -466,6 +513,10 @@ class HomeOSHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/guest-access":
             GUEST_ROOM_ACCESS["studio_unlocked"] = bool(body.get("studio_unlocked", False))
             return self.send_json({"ok": True, "studio_unlocked": GUEST_ROOM_ACCESS["studio_unlocked"]})
+
+        if parsed.path == "/api/config/gemini":
+            save_gemini_key(body.get("api_key", ""))
+            return self.send_json({"ok": True, "gemini_enabled": bool(get_gemini_key())})
 
         graph = load_graph()
 

@@ -4,11 +4,14 @@
 
 **`vaughn-apt`** turns two handheld smartphone walkthrough videos (`IMG_6804.MOV` & `IMG_6805.MOV`) into a complete **Spatial Home OS & Cyber-Physical Reality Twin**, **modular Blender 5.3 level**, **crisp 25k-step 3D Gaussian Splat (3DGS)**, **game-engine exports (`.glb`/`.fbx`)**, and **playable Three.js First-Person Escape Room** — all running locally on Windows with zero paid cloud lock-in.
 
+### Live Spatial Home OS (Verified Browser Capture)
+![vaughn-apt Spatial Home OS Live UI](renders/home_os_live.png)
+
 ![Top-Down Apartment Floorplan Render](renders/preview_floorplan.png)
 
 ---
 
-## Complete 5-Phase Roadmap Status
+## Complete 6-Phase Roadmap Status
 
 | Phase | Milestone | Status |
 | :--- | :--- | :--- |
@@ -18,6 +21,7 @@
 | **Phase 3** | **Cyber-Physical Hardware Bridge** (real **WLED Pick-to-Light** shelf LEDs, **Klipper/Moonraker & OctoPrint** 3D printer telemetry hooks, Smart Lamp & HTTP webhook control) | ✅ Complete |
 | **Phase 4** | **Room-Aware Spatial Agent (`Tab`)** — grounded in your active room/shelf, answers *"What's here?"*, runs multi-shelf project BOM feasibility checks, mutates inventory in plain English, and auto-upgrades to **Gemini 2.5 Flash** when `GEMINI_API_KEY` is set | ✅ Complete |
 | **Phase 5** | **"Guests" & Social Presence** — Live 3D floating multiplayer Guest Avatars with nametags, server-side per-room privacy redaction (Vault & Studio locked for Guests with live Studio unlock switch), Front Door Comms Concierge w/ Web Audio doorbell chime, synced Living Room TV Co-Watch, Lounge Chat, & one-command `scripts/scan_my_home.py` runner | ✅ Complete |
+| **Phase 6** | **Production Polish** — Native Web Speech **Voice Commands (`🎙`)**, seamless **Dollhouse ↔ First-Person Walk Mode (`V`)** inside Home OS, **Hardware/Gemini/Backup Setup Modal (`⚙`)** with gitignored `.env` key storage & LAN device poller, and verified zero-error browser E2E capture | ✅ Complete |
 
 > Full system vision & schema specification: **[`docs/REALITY_OS_ARCHITECTURE.md`](docs/REALITY_OS_ARCHITECTURE.md)**
 

@@ -289,6 +289,24 @@ html, body {
 .media-content iframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 8px; }
 .media-content img { max-width: 100%; max-height: 72vh; border-radius: 8px; }
 
+.voice-btn {
+  border: 1px solid rgba(88, 213, 255, 0.3); background: rgba(88, 213, 255, 0.1);
+  color: #e6f6ff; border-radius: 7px; padding: 4px 8px; cursor: pointer; font-size: 13px;
+}
+.voice-btn.listening { background: #ff4b5c; border-color: #ff8a95; animation: pulseMic 1s infinite; }
+@keyframes pulseMic { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+.walk-hud { position: fixed; inset: 0; pointer-events: none; z-index: 24; }
+.walk-reticle {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 9px; height: 9px; border-radius: 50%; border: 2px solid #58d5ff; background: rgba(0,0,0,0.35);
+}
+.walk-prompt {
+  position: absolute; bottom: 72px; left: 50%; transform: translateX(-50%);
+  background: rgba(11, 17, 28, 0.88); border: 1px solid rgba(88, 213, 255, 0.45);
+  padding: 7px 14px; border-radius: 9px; font-size: 12.5px; color: #e6f4ff;
+}
+
 .toast {
   position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 35;
   background: rgba(14, 28, 42, 0.95); border: 1px solid #58d5ff;

@@ -33,8 +33,9 @@
         id="cmd-input"
         type="text"
         autocomplete="off"
-        placeholder="Search or tell the apartment: 'basys' · 'circuit' · 'put ESP32 x4 on studio shelf 2' · 'bom smart lamp'"
+        placeholder="Speak or type: 'basys' · 'circuit' · 'put ESP32 x4 on studio shelf 2' · 'bom smart lamp'"
       />
+      <button id="btn-voice" class="voice-btn" title="Voice Command (Speak to your apartment)">🎙</button>
       <kbd class="cmd-kbd">/</kbd>
       <div id="cmd-results" class="cmd-results hidden"></div>
     </div>
@@ -42,6 +43,7 @@
     <nav class="mode-nav">
       <button id="btn-guests-toggle" class="nav-pill guest-pill" title="Open Guests, Doorbell Comms &amp; Lounge Chat">👥 Guests (<span id="guest-count">1</span>)</button>
       <button id="btn-agent-toggle" class="nav-pill agent-pill" title="Open Room-Aware Spatial Agent (Tab)">🤖 Agent</button>
+      <button id="btn-settings" class="nav-pill" title="Hardware, Gemini Vision Key &amp; Backup Settings" style="border:none;background:transparent;cursor:pointer;">⚙</button>
       <a class="nav-pill active" href="home_os.html">Home OS</a>
       <a class="nav-pill" href="index.html">Escape Room</a>
       <a class="nav-pill" href="splat.html">3DGS Splat</a>
@@ -67,8 +69,8 @@
 
     <div class="side-footer">
       <div class="quick-row">
+        <button id="btn-walk-mode" class="mini-btn accent" title="Toggle First-Person Walk Mode (V)">🚶 Walk [V]</button>
         <button id="btn-cam-iso" class="mini-btn">Dollhouse</button>
-        <button id="btn-cam-living" class="mini-btn">Living</button>
         <button id="btn-cam-studio" class="mini-btn">Studio</button>
         <button id="btn-scan-toggle" class="mini-btn">3D Scan</button>
       </div>
@@ -270,6 +272,41 @@
       </div>
       <div id="media-content" class="media-content"></div>
     </div>
+  </div>
+
+  <!-- Settings, Hardware Poll & Backup Modal (Phase 6) -->
+  <div id="settings-modal" class="media-modal hidden">
+    <div class="media-card" style="max-width:520px;">
+      <div class="media-head">
+        <span>⚙ REALITY OS — HARDWARE, GEMINI AI &amp; BACKUP</span>
+        <button id="settings-close" class="icon-close">✕</button>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:14px;">
+        <div class="insp-section">
+          <div class="sec-head"><span>OPTIONAL GEMINI API KEY (VISION DRAWERS + 2.5 FLASH AGENT)</span><span id="gemini-status" class="count-pill">Local Mode</span></div>
+          <form id="form-gemini-key" class="inline-form">
+            <input id="input-gemini-key" type="password" placeholder="Paste GEMINI_API_KEY (saved locally to gitignored .env)" />
+            <button type="submit" class="btn-add">Save</button>
+          </form>
+        </div>
+        <div class="insp-section">
+          <div class="sec-head"><span>REAL-WORLD HARDWARE TELEMETRY</span><button id="btn-poll-hw" class="mini-btn accent" style="flex:0 0 auto;">⚡ Poll LAN Devices</button></div>
+          <ul id="hw-poll-list" class="item-list"><li class="item-row"><div class="item-sub">Click "Poll LAN Devices" to ping configured WLED strips, Moonraker/OctoPrint printers, and smart lamps.</div></li></ul>
+        </div>
+        <div class="insp-section">
+          <div class="sec-head"><span>HOME GRAPH BACKUP</span></div>
+          <div class="special-row">
+            <button id="btn-export-graph" class="mini-btn accent">⬇ Export home_graph.json Backup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Walk Mode Crosshair Hint -->
+  <div id="walk-hud" class="walk-hud hidden">
+    <div class="walk-reticle"></div>
+    <div id="walk-prompt" class="walk-prompt">WASD to walk · Mouse to look · <kbd>E</kbd> Inspect nearest zone · <kbd>Esc</kbd> Dollhouse</div>
   </div>
 
   <!-- Toast feedback -->
