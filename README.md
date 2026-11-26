@@ -6,6 +6,23 @@
 
 ---
 
+## Spatial Home OS & Cyber-Physical Reality Twin (Next Evolution)
+
+Beyond the Escape Room and 3D Gaussian Splat, `vaughn-apt` is evolving into a **Spatial Home OS & Cyber-Physical Reality Twin** — uniting your **digital files**, **physical hardware inventory** (Arduinos, Basys FPGAs, Raspberry Pis, ICs, sensors, 10× 3D printers, music gear), **smart home devices**, **AI agents**, and **guests** inside one shared `apt://` spatial address space.
+
+👉 **Read the full vision, `home_graph.json` schema, and 5-phase execution roadmap:** [**`docs/REALITY_OS_ARCHITECTURE.md`**](docs/REALITY_OS_ARCHITECTURE.md)
+
+| Phase | Milestone | Status |
+| :--- | :--- | :--- |
+| **Phase 0** | 3D Video Reconstruction, Crisp 25k-step 3DGS, Modular Blender 5.3 Level, `.glb`/`.fbx`, Escape Room | ✅ Complete |
+| **Phase 1** | Spatial Home OS MVP (`home_graph.json`, `apt://` shelf/drawer/closet inventory + files, fly-to search, TV media, stereo, live whiteboard) | 🚧 Up Next |
+| **Phase 2** | Local Filesystem Bridge & Vision Photo-to-Inventory Drawer Capture | ⏳ Planned |
+| **Phase 3** | Cyber-Physical Hardware Bridge (3D Printer Farm, Smart Lamps / MQTT, WLED Pick-to-Light, Raspberry Pis) | ⏳ Planned |
+| **Phase 4** | Room-Aware AI Agent & BOM Feasibility Planner | ⏳ Planned |
+| **Phase 5** | "Guests" (Front Door Comms Concierge, Multiplayer Co-Presence, Per-Room Privacy) | ⏳ Planned |
+
+---
+
 ## Visual Tour (Blender 5.3 EEVEE Renders)
 
 | Corner Living Room & Stitched City Skyline | U-Shaped Kitchen, Dining & Real Framed Art |
