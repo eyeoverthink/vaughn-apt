@@ -67,6 +67,27 @@ html, body {
 .nav-pill.active { background: linear-gradient(135deg, #2596ff, #00c4a7); color: #041018; font-weight: 700; }
 .nav-pill.agent-pill { border: 1px solid rgba(188, 120, 255, 0.45); background: rgba(163, 113, 247, 0.16); color: #e2c5ff; cursor: pointer; }
 .nav-pill.agent-pill:hover, .nav-pill.agent-pill.on { background: rgba(163, 113, 247, 0.35); color: #fff; }
+.nav-pill.guest-pill { border: 1px solid rgba(126, 231, 135, 0.45); background: rgba(63, 185, 80, 0.16); color: #b6f5be; cursor: pointer; }
+.nav-pill.guest-pill:hover, .nav-pill.guest-pill.on { background: rgba(63, 185, 80, 0.34); color: #fff; }
+
+.cowatch-banner {
+  position: fixed; top: 72px; left: 50%; transform: translateX(-50%); z-index: 28;
+  background: rgba(13, 24, 38, 0.94); border: 1px solid #ff9e64; border-radius: 12px;
+  padding: 8px 14px; display: flex; align-items: center; gap: 10px;
+  font-size: 12.5px; font-weight: 600; color: #ffe1cc; box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+}
+
+.guests-drawer {
+  position: fixed; top: 72px; left: 296px; width: 390px; max-height: calc(100vh - 96px); z-index: 27;
+  background: rgba(12, 19, 30, 0.95); backdrop-filter: blur(14px);
+  border: 1px solid rgba(126, 231, 135, 0.42); border-radius: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.72);
+}
+.guests-body { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.tier-vip { color: #7ee787; font-weight: 700; }
+.tier-standard { color: #58d5ff; }
+.tier-muted { color: #8c9db5; }
 
 /* Shelf Photo & Maker Quick Chips */
 .photo-wrap { border-radius: 9px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14); max-height: 170px; background: #070b11; }

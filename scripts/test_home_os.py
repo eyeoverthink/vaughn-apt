@@ -1,4 +1,4 @@
-"""Automated verification tests for vaughn-apt Spatial Home OS (Phases 1-4)."""
+"""Automated verification tests for vaughn-apt Spatial Home OS (Phases 1-5 Complete)."""
 import copy
 import sys
 from pathlib import Path
@@ -39,7 +39,32 @@ def main() -> None:
     a3 = srv.run_spatial_agent(copy.deepcopy(g), "inventory summary", None)
     assert "14 spatial nodes" in a3["reply"], a3
 
-    print("ALL PHASES 1-4 SPATIAL HOME OS TESTS PASSED!")
+    # Phase 5: Server-Side Guest Privacy Redaction & Front Door Doorman Triage
+    srv.GUEST_ROOM_ACCESS["studio_unlocked"] = False
+    redacted = srv.redact_graph_for_guest(copy.deepcopy(g))
+    vault = next(n for n in redacted["nodes"] if n["id"] == "apt://hall/closet")
+    shelf2 = next(n for n in redacted["nodes"] if n["id"] == "apt://studio/white-cube-shelf/shelf-2")
+    tv = next(n for n in redacted["nodes"] if n["id"] == "apt://living/tv")
+    assert vault.get("locked") is True and len(vault["physical_items"]) == 0, vault
+    assert shelf2.get("locked") is True and len(shelf2["digital_files"]) == 0, shelf2
+    assert not tv.get("locked") and len(tv["digital_files"]) > 0, tv
+
+    # Unlock studio for guest collaboration while Vault stays strictly locked!
+    srv.GUEST_ROOM_ACCESS["studio_unlocked"] = True
+    redacted2 = srv.redact_graph_for_guest(copy.deepcopy(g))
+    vault2 = next(n for n in redacted2["nodes"] if n["id"] == "apt://hall/closet")
+    shelf2_open = next(n for n in redacted2["nodes"] if n["id"] == "apt://studio/white-cube-shelf/shelf-2")
+    assert vault2.get("locked") is True, vault2
+    assert not shelf2_open.get("locked") and len(shelf2_open["physical_items"]) > 0, shelf2_open
+    srv.GUEST_ROOM_ACCESS["studio_unlocked"] = False
+
+    # Doorman Comms Auto-Triage
+    vip = srv.triage_incoming_message("Maya (VIP)", "SMS", "Coming over to jam!")
+    promo = srv.triage_incoming_message("Deals", "Email", "Flash sale newsletter promo")
+    std = srv.triage_incoming_message("GitHub", "Email", "Build complete")
+    assert vip["status"] == "living_room" and promo["status"] == "held_outside" and std["status"] == "entryway"
+
+    print("ALL PHASES 1-5 SPATIAL HOME OS TESTS PASSED!")
 
 
 if __name__ == "__main__":

@@ -1,157 +1,147 @@
-# vaughn-apt
+# vaughn-apt — Spatial Home OS, Cyber-Physical Reality Twin & 3D Apartment World
 
-**Hybrid 3D Video Reconstruction, Modular Blender 5.3 Escape-Room Level, Game-Engine Exports, Playable Three.js First-Person Walkthrough, and RTX 5070 3D Gaussian Splat (3DGS)** — built directly from two smartphone apartment walkthrough videos (`IMG_6804.MOV` & `IMG_6805.MOV`).
+> *"Bridging the gap between digital and life is only a matter of interpretation — it's no longer about tangibility. If an app feels like home, you're more likely to stay and invite guests."*
+
+**`vaughn-apt`** turns two handheld smartphone walkthrough videos (`IMG_6804.MOV` & `IMG_6805.MOV`) into a complete **Spatial Home OS & Cyber-Physical Reality Twin**, **modular Blender 5.3 level**, **crisp 25k-step 3D Gaussian Splat (3DGS)**, **game-engine exports (`.glb`/`.fbx`)**, and **playable Three.js First-Person Escape Room** — all running locally on Windows with zero paid cloud lock-in.
 
 ![Top-Down Apartment Floorplan Render](renders/preview_floorplan.png)
 
 ---
 
-## Spatial Home OS & Cyber-Physical Reality Twin (Next Evolution)
-
-Beyond the Escape Room and 3D Gaussian Splat, `vaughn-apt` is evolving into a **Spatial Home OS & Cyber-Physical Reality Twin** — uniting your **digital files**, **physical hardware inventory** (Arduinos, Basys FPGAs, Raspberry Pis, ICs, sensors, 10× 3D printers, music gear), **smart home devices**, **AI agents**, and **guests** inside one shared `apt://` spatial address space.
-
-👉 **Read the full vision, `home_graph.json` schema, and 5-phase execution roadmap:** [**`docs/REALITY_OS_ARCHITECTURE.md`**](docs/REALITY_OS_ARCHITECTURE.md)
+## Complete 5-Phase Roadmap Status
 
 | Phase | Milestone | Status |
 | :--- | :--- | :--- |
-| **Phase 0** | 3D Video Reconstruction, Crisp 25k-step 3DGS, Modular Blender 5.3 Level, `.glb`/`.fbx`, Escape Room | ✅ Complete |
-| **Phase 1** | Spatial Home OS MVP (`data/home_graph.json`, `scripts/home_os_server.py`, `web/home_os.html` — unified `apt://` shelf/drawer/closet atoms + bits, natural-language command & BOM search, fly-to spotlight, Owner/Guest privacy view, Living Room TV, persistent Stereo, live Whiteboard) | ✅ Complete |
-| **Phase 2** | Local Filesystem Bridge (mount & browse real PC folders, open natively, pin to shelves), Live 3D Wall Art Swapper, Drawer Photo Capture + Optional Gemini Vision Auto-Tagging | ✅ Complete |
-| **Phase 3** | Cyber-Physical Hardware Bridge (WLED Pick-to-Light Shelf LEDs, Moonraker/OctoPrint 3D Printer Telemetry, Smart Lamp & Webhook Triggers) | ✅ Complete |
-| **Phase 4** | Room-Aware Spatial Home Agent (`Tab`) & Project BOM Feasibility Engine (Offline Spatial Engine + Optional Gemini 2.5 Flash Upgrade) | ✅ Complete |
-| **Phase 5** | "Guests" (Front Door Comms Concierge, Multiplayer WebSocket Co-Presence, Generalized Scan-Your-Home Pipeline) | ⏳ Up Next |
+| **Phase 0** | 3D Video Reconstruction (`pycolmap 4.2.1`), Crisp 25k-step Pinhole 3DGS (`Brush` on RTX 5070), Modular Blender 5.3 Level w/ Real Apartment Textures, `.glb`/`.fbx` Exports, & Playable 4-Clue Escape Room | ✅ Complete |
+| **Phase 1** | **Spatial Home OS MVP** (`data/home_graph.json`, `apt://` unified atoms + bits addressing, `Ctrl+K` natural-language command bar & BOM parser, 3D fly-to spotlight, Living Room TV, persistent Music Nook Stereo, editable Hallway Whiteboard) | ✅ Complete |
+| **Phase 2** | **Local Filesystem Bridge & Visual Capture** (mount & browse real Windows folders per room/closet, launch files natively on PC, live 3D Dining Wall Art texture swapper, Drawer/Shelf Photo Capture + optional Gemini Vision auto-tagging) | ✅ Complete |
+| **Phase 3** | **Cyber-Physical Hardware Bridge** (real **WLED Pick-to-Light** shelf LEDs, **Klipper/Moonraker & OctoPrint** 3D printer telemetry hooks, Smart Lamp & HTTP webhook control) | ✅ Complete |
+| **Phase 4** | **Room-Aware Spatial Agent (`Tab`)** — grounded in your active room/shelf, answers *"What's here?"*, runs multi-shelf project BOM feasibility checks, mutates inventory in plain English, and auto-upgrades to **Gemini 2.5 Flash** when `GEMINI_API_KEY` is set | ✅ Complete |
+| **Phase 5** | **"Guests" & Social Presence** — Live 3D floating multiplayer Guest Avatars with nametags, server-side per-room privacy redaction (Vault & Studio locked for Guests with live Studio unlock switch), Front Door Comms Concierge w/ Web Audio doorbell chime, synced Living Room TV Co-Watch, Lounge Chat, & one-command `scripts/scan_my_home.py` runner | ✅ Complete |
+
+> Full system vision & schema specification: **[`docs/REALITY_OS_ARCHITECTURE.md`](docs/REALITY_OS_ARCHITECTURE.md)**
 
 ---
 
-## Visual Tour (Blender 5.3 EEVEE Renders)
+## Visual Tour (Blender 5.3 EEVEE Renders w/ Real Cropped Apartment Textures)
 
-| Corner Living Room & Stitched City Skyline | U-Shaped Kitchen, Dining & Real Framed Art |
+Every hero surface — the stitched downtown skyline outside the wrap-around windows, the woven jute rug, the framed tattooed-hands dining painting, the handwritten hallway whiteboard, and the entryway vinyl album art — was cropped directly from the walkthrough videos and embedded into `.blend` and `.glb`:
+
+| Corner Living Room & Real Stitched Skyline | U-Shaped Kitchen, Dining & Real Wall Art |
 | :---: | :---: |
 | ![Corner Living Room](renders/preview_living.png) | ![Kitchen and Dining](renders/preview_kitchen.png) |
 
-| Studio / 3D-Printer Office & Foil Windows | Entry Hallway, Yale Keypad & Bathroom |
+| Studio / 3D-Printer Office & Foil Windows | Entry Hallway, Yale Smart Keypad & Bath |
 | :---: | :---: |
 | ![Studio Office](renders/preview_studio.png) | ![Entry Hallway](renders/preview_entry.png) |
 
 ---
 
-## Project Architecture & Pipeline
+## Photorealistic 3D Gaussian Splatting (Brush on RTX 5070)
 
-This project takes raw handheld video and turns it into **four synchronized 3D deliverables** on a local Windows GPU workstation (**NVIDIA RTX 5070 12 GB**, **Blender 5.3**, **FFmpeg**, **pycolmap 4.2.1**, **Brush 3DGS**):
-
-```
-IMG_6804.MOV (85s) + IMG_6805.MOV (39s)
-        │
-        ▼  1. Frame Extraction & Sharpness Filtering (FFmpeg + OpenCV Laplacian)
-  496 candidate frames ──► Sharp blur-filtered keyframes + real cropped apartment textures
-        │
-        ├──► 2A. Structure-from-Motion (pycolmap 4.2.1)
-        │         ├─► Gravity-aligned 3D point cloud (living_scan_aligned.ply / living_scan_threejs.json)
-        │         ├─► Floorplan & elevation measurements (8.2 m × 13.6 m, ~85 m²)
-        │         └─► Brush 3D Gaussian Splatting (RTX 5070 WebGPU) ──► scan/splat/apartment_splat.ply
-        │
-        └──► 2B. Modular Blender 5.3 Level Generator (scripts/build_apartment_blender.py)
-                  ├─► blender/apartment_escape_room.blend   (10 collections, 386 meshes, 45 materials)
-                  ├─► exports/apartment_escape_room.glb     (glTF 2.0 w/ 5 embedded apartment textures)
-                  ├─► exports/apartment_escape_room.fbx     (FBX w/ embedded textures for Unity/Unreal)
-                  └─► web/                                  (Three.js Escape Room + 3DGS Splat Viewer)
-```
-
-### Real Cropped Apartment Textures Embedded in the 3D World
-Rather than generic placeholders, key hero surfaces were cropped and rectified directly from the source videos and packed into both `.blend` and `.glb`:
-- **Panoramic Downtown Skyline** (`textures/skyline_clean.jpg`) — OpenCV panorama stitched from 9 window-pan frames of `IMG_6805.MOV`
-- **Woven Jute Living Room Rug** (`textures/tex_rug_clean.jpg`) — shadow-free seamlessly mirror-tiled weave
-- **Framed Tattooed-Hands Painting** (`textures/tex_wall_art_clean.jpg`) — real canvas mounted on the dining pier wall
-- **Handwritten Hallway Whiteboard** (`textures/tex_whiteboard_clean.jpg`) — real dry-erase notes mounted outside the Music Nook
-- **Entryway Vinyl Album Art** (`textures/tex_vinyl_art.jpg`) — leaning on the tufted entryway bench
-
----
-
-## 3D Reconstruction & Gaussian Splatting (3DGS)
-
-### Structure-from-Motion Floorplan Analysis
-`pycolmap 4.2.1` registered **187 / 191** sharp frames across the apartment zones, stitching both videos together across the living room, dining area, music nook, and kitchen, plus recovering the studio office and entry hallway:
-
-| Living/Kitchen SfM Floorplan & Elevation | Multi-Zone Room Comparison |
-| :---: | :---: |
-| ![SfM Floorplan](scan/floorplan_analysis.png) | ![Room Zone Comparison](scan/rooms_floorplan_comparison.png) |
-
-### 3D Gaussian Splat (Brush on RTX 5070) — v1 vs v2 Fix
-
-The initial v1 splat was blurry and hazy because it trained for only 8,000 steps on 98 sparse `SIMPLE_RADIAL` (distorted) frames. For **v2**, the entire 3DGS pipeline was rebuilt from the ground up:
+The initial v1 3DGS baseline was blurry because it trained for only 8,000 steps on 98 sparse `SIMPLE_RADIAL` (un-rectified) frames. In **v2**, the reconstruction pipeline (`scripts/build_crisp_3dgs_dataset.py` + `scripts/postprocess_splat.py`) rebuilt a **4.3× denser, zero-distortion `PINHOLE` dataset** and trained **25,000 steps @ 1280 px** on an RTX 5070 before pruning floaters and gravity-aligning both splat positions and Gaussian quaternions:
 
 | Metric | v1 Baseline (Blurry) | v2 Fixed (Crisp) |
 | :--- | :--- | :--- |
-| **Registered Views** | 98 frames (2 fps, mixed) | **209 ultra-sharp frames** (4 fps, Laplacian ≥ 111.8) |
-| **Camera Model** | `SIMPLE_RADIAL` (un-rectified) | **Exact `PINHOLE`** via `pycolmap.undistort_images` |
-| **Initial 3D SfM Points** | 14,246 pts (2,500 SIFT/img) | **60,743 pts** (4,096 SIFT/img — **4.3× denser**) |
+| **Registered Views** | 98 frames (2 fps) | **209 ultra-sharp frames** (4 fps, Laplacian ≥ 111.8) |
+| **Camera Model** | `SIMPLE_RADIAL` | **Exact `PINHOLE`** via `pycolmap.undistort_images` |
+| **Initial 3D SfM Points** | 14,246 pts | **60,743 pts** (4,096 SIFT/img) |
 | **Training Steps / Res** | 8,000 steps @ 1024 px | **25,000 steps @ 1280 px** (SSIM 0.25, SH deg 2) |
-| **Post-Processing** | None (tilted, hazy floaters) | **Floater/fog pruned** (1.2M → **383,351 crisp splats**, 58.3 MB) + **RANSAC gravity-aligned** (positions & quaternions) |
+| **Post-Processing** | None | **Floater-pruned** (1.2M → **383,351 splats**, 55.6 MB) + **RANSAC gravity-aligned** |
 
-#### Before (v1) vs After (v2) Comparison
+### Before (v1) vs After (v2) Gaussian Splat Comparison
 ![Before vs After 3DGS Comparison](renders/splat_before_after.jpg)
 
-#### v2 3D Gaussian Splat Gallery (Rendered from `apartment_splat.ply`)
+### v2 Crisp 3DGS Showcase Gallery (Rendered from `scan/splat/apartment_splat.ply`)
 ![v2 3DGS Showcase Gallery](renders/splat_v2_showcase.jpg)
 
-| Kitchen, Music Nook & Dining Lookback (3DGS v2) |
-| :---: |
-| ![3DGS v2 Lookback](scan/splat_v2/eval_25000/dense_0211_v2_0145.png) |
-
-> **Tip for 100% Wall-to-Wall Perfection:** Because the original handheld videos were shot vertically (9:16) with fast doorway pans, edge areas with single-angle coverage (such as right next to the kitchen island) still have minor streaks. Shooting a slow **0.5× ultrawide landscape** loop pausing 1 second at every doorway and re-running `scripts/build_crisp_3dgs_dataset.py` + `brush_app.exe` + `scripts/postprocess_splat.py` will eliminate those remaining edge streaks too.
+| Multi-Zone SfM Floorplan & Elevation | 3DGS v2 — Kitchen, Music Nook & Dining Lookback |
+| :---: | :---: |
+| ![SfM Floorplan](scan/floorplan_analysis.png) | ![3DGS v2 Lookback](scan/splat_v2/eval_25000/dense_0211_v2_0145.png) |
 
 ---
 
-## Playable First-Person Escape Room (`web/`)
+## Quick Start (3 Live 3D Experiences in One Local Server)
 
-A complete browser-based **Three.js** walkthrough and 4-stage interactive escape room runs directly off `exports/apartment_escape_room.glb`:
+Double-click **`launch_walkthrough.bat`** or run:
 
-### Quick Start
-1. Double-click **`launch_walkthrough.bat`** (or run `python -m http.server 8765` from the repo root).
-2. Open **`http://localhost:8765/web/`** for the First-Person Escape Room, or **`http://localhost:8765/web/splat.html`** for the 3D Gaussian Splat Viewer.
+```powershell
+python scripts\home_os_server.py 8765
+```
 
-### Controls
-| Key / Input | Action |
-| :--- | :--- |
-| `W A S D` / Arrow Keys | Walk (`Shift` to sprint) |
-| `Mouse` | First-person look (Pointer Lock) |
-| `E` | Interact with clues, zoom binoculars, play MIDI synth, operate 3D printer, open/close hinged doors, or use the Yale Smart Keypad |
-| `F` | Toggle White LED Flashlight |
-| `U` | Toggle Purple **UV Blacklight** (once printed in the Studio Office!) |
-| `P` | Toggle your real colorized **COLMAP 3D Video Scan Overlay** inside the apartment |
-| `1` – `4` | Instant Room Teleports (Living Room, Kitchen/Music Nook, Studio Office, Front Entryway) |
-| `Esc` | Pause / close modal |
-
-### Escape Room Puzzle Chain (Spoiler-Free Overview)
-1. **Corner Living Room — Bistro Laptop & Windowsill Binoculars:** Inspect the glowing laptop overlooking the skyline, then peer through the windowsill binoculars (`E`) with a 4.5× optical zoom reticle to read the downtown rooftop beacon (**Digit #1**).
-2. **Music Production Nook — Playable MIDI Synthesizer:** Open the interactive 8-key Web Audio synthesizer modal and play the ascending **C-Major-7** arpeggio (`C → E → G → B`) to decode the mixer LCD (**Digit #2**).
-3. **Studio / 3D-Printer Office — Animated 3D Printer & UV Lens:** Open the Studio door and run the 3D printer (`E`) to animate the print head, collect the freshly printed **UV Blacklight Lens** into your inventory, and read the heated-bed calibration tag (**Digit #3**).
-4. **East Hallway — UV Blacklight Whiteboard:** Activate UV Blacklight (`U`) and inspect your real hallway whiteboard to reveal hidden glowing neon ink (**Digit #4**).
-5. **Front Entry Door — Yale Smart Keypad:** Enter the 4-digit PIN on the interactive keypad to unlock and swing open the oak front door!
-6. **Bonus Easter Eggs:** Brew espresso at the kitchen coffee maker for a 15-second sprint boost, or check the microwave LCD for the digit order hint.
+Then open any of the three synced 3D modes in your browser:
+- **Spatial Home OS (Default):** `http://localhost:8765/web/home_os.html`
+- **Playable Escape Room (First Person):** `http://localhost:8765/web/index.html`
+- **Photorealistic 3D Gaussian Splat Viewer:** `http://localhost:8765/web/splat.html` *(or double-click `launch_brush_splat.bat` for native RTX GPU viewing)*
+- **Live Multiplayer Guest Tab (Same PC or LAN Wi-Fi):** `http://localhost:8765/web/home_os.html?guest=1&name=Alex`
 
 ---
 
-## Blender 5.3 Collections & Game Engine Import
+## Spatial Home OS — Feature Guide (`web/home_os.html`)
 
-Open **`blender/apartment_escape_room.blend`** in Blender 5.3+. Every room and puzzle prop is modular and separated into 10 Outliner collections:
+### 1. Unified Spatial Addressing (`apt://` Atoms + Bits)
+Instead of flat desktop folders, every shelf, drawer, closet, desk, wall, stereo, TV, and 3D printer has one canonical spatial URI in `data/home_graph.json`:
+- **`apt://studio/white-cube-shelf/shelf-2`** holds *both* your physical **Digilent Basys 3 FPGA, Arduino Uno/Mega/Nano kit, breadboards, 555/74HC595 ICs, and sensors** *and* your digital **`circuit_drawing.kicad_sch` & `basys3_master_constraints.xdc`**!
+- **`apt://hall/closet`** is your private **Important Files Vault** (mounted to a real local folder on your PC, strictly redacted for Guests at the server API level).
+- **`apt://studio/printers`** tracks your **10× 3D Printer Farm** with Moonraker/Klipper & OctoPrint telemetry hooks.
+- **`apt://living/tv`**, **`apt://music/console`**, **`apt://dining/wall-art`**, **`apt://hall/whiteboard`**, **`apt://living/bistro`**, and **`apt://kitchen/coffee`** unite media, persistent room audio, pinned visual art, shared notes, world overview, and one-click lighting/routine scenes.
 
-| Collection | Contents |
+### 2. Command Bar (`/` or `Ctrl+K`) & Room-Aware Spatial Agent (`Tab`)
+Try any of these natural-language commands right in the top bar or inside the **🤖 Agent** drawer:
+- `where is my basys board` / `circuit drawing` → Flies the 3D camera straight to **Studio Shelf #2**, fires a pulsing 3D spotlight beam (plus real WLED Pick-to-Light LED if linked!), and opens Atoms + Bits side-by-side.
+- `put Arduino Due x2 on studio shelf 2` → Immediately adds physical hardware to `data/home_graph.json`.
+- `save motor_driver.kicad_sch to studio shelf 2` → Saves a digital artifact right onto that shelf.
+- `bom smart lamp` / `bom robot` → Runs a **Bill of Materials feasibility scan** across all drawers & shelves so you know what parts you already own and exactly where to grab them.
+- `what is here?` / `inventory summary` → Context-aware room summary (auto-upgrades to **Gemini 2.5 Flash** if `GEMINI_API_KEY` is set in your environment).
+
+### 3. Local Filesystem, Live 3D Wall Art, Drawer Photos & IoT Hardware
+- **Local Folder Mounting:** Mount any Windows folder (e.g., `docs`, `scripts`, `C:\Users\...`) to any closet or desk, browse files in 3D, click **Open** to launch natively on Windows, or **Pin** files onto that shelf.
+- **Live 3D Wall Art Swap:** Click `apt://dining/wall-art` and upload any local image to dynamically swap the framed painting texture right inside the live Three.js apartment.
+- **Drawer Photo Capture:** Upload a real photo of any open drawer/shelf to store a visual reference (and auto-detect parts via Gemini Vision if `GEMINI_API_KEY` is configured), plus one-click Maker Hardware quick-chips.
+- **Hardware Bridge:** Link any **ESP32 WLED** IP (Pick-to-Light), **Moonraker/OctoPrint** 3D printer IP, or **Smart Lamp / Webhook** URL per spatial node and trigger real hardware straight from 3D.
+
+### 4. Guests, Front Door Comms Concierge & Privacy (`👥 Guests`)
+- **Live 3D Guest Avatars:** Click **↗ Open Guest Tab** (or share your LAN IP `http://<your-ip>:8765/web/home_os.html?guest=1&name=Maya`) to see real-time 3D floating capsule avatars + nametags gliding across the Living Room!
+- **Server-Side Room Privacy:** `GET /api/graph?guest=1` strictly strips your **Hall Closet Vault** and **Studio Office** on the backend—Guests only see public rooms unless you click **🔓 Studio Unlocked** for a build collab.
+- **Front Door Comms Concierge:** Click **🔔 Ring Doorbell** to test the two-tone Web Audio chime and Doorman auto-triage (`VIP → Living Room`, `Standard → Entryway`, `Promo/Spam → Held Outside`).
+- **Synced Living Room TV Co-Watch & Lounge Chat:** Click **📡 Share to Room TV** on `apt://living/tv` to broadcast a synced YouTube watch-party banner to everyone currently in the apartment.
+
+---
+
+## Escape Room Mode (`web/index.html`)
+
+Prefer a first-person puzzle game inside the apartment? Switch to **Escape Room** (`WASD` walk, `Mouse` look, `E` interact/open doors, `F` white flashlight, `U` UV blacklight, `P` toggle real COLMAP 3D scan overlay, `1–4` room teleports):
+1. **Bistro Laptop + Windowsill Binoculars:** 4.5× optical zoom vignette scans the real downtown skyline for Digit #1.
+2. **Music Nook MIDI Synth:** Play the live Web Audio **C-Major-7** arpeggio (`C → E → G → B`) to unlock Digit #2.
+3. **Studio 3D Printer:** Animates the print head across the bed, prints & equips a collectible **UV Blacklight Lens**, and stamps Digit #3.
+4. **Hallway Whiteboard + Yale Smart Keypad:** Activate UV Blacklight (`U`) to reveal hidden neon ink (Digit #4) and unlock the oak front entry door!
+
+---
+
+## Blender 5.3 Collections & Game-Engine Exports
+
+Open **`blender/apartment_escape_room.blend`** (386 meshes, 45 PBR materials, 5 packed real photo textures, 10 organized Outliner collections including the toggleable 10,283-point `09_3DScan_Reference` cloud):
+- **Godot 4 / Three.js / WebGL:** Import `exports/apartment_escape_room.glb` (1.44 MB self-contained glTF 2.0 with embedded textures and named `INTERACT_*` markers).
+- **Unity / Unreal Engine 5:** Import `exports/apartment_escape_room.fbx` (embedded textures; all hinged doors have origins set cleanly on their hinge axes).
+
+---
+
+## REST API Reference (`scripts/home_os_server.py`)
+
+| Method & Endpoint | Description |
 | :--- | :--- |
-| `01_Architecture` | Oak plank floors, carpeted studio, tiled bath, walls, baseboards, recessed ceiling downlights, NW corner column |
-| `02_Windows_Skyline` | Wrap-around aluminum mullions, translucent glass panes, stitched panoramic city skyline backdrops |
-| `03_Kitchen` | Maple cabinets with chrome pulls, granite countertops, stainless fridge, range/burners, microwave, sink/faucet, pendants, cognac bar stools |
-| `04_LivingRoom` | Modular cream sectional + pillows/blanket, real jute rug, coffee table + backpack, sneakers, TV console, acoustic guitar, bistro laptop, binoculars, gaming chairs, NE desk |
-| `05_MusicNook_Dining` | Dining table & chairs, real framed tattoo-hands painting, 61-key MIDI keyboard, DJ controller, mixer, studio monitors, mic stand, real handwritten whiteboard |
-| `06_StudioOffice` | Foil window reflectors, dual stacked monitors, two detailed 3D printers (X-rail, extruder, cyan spool, UV lens print), cube shelf + TV, electric guitar, second desk, walk-in closet |
-| `07_EntryHall_Bath` | Hinged doors with casings (`Door_FrontEntry` w/ Yale keypad, `Door_StudioOffice`, `Door_Bathroom`, `Door_LivingMaster`, `Door_Pantry`), tufted bench + vinyls, guitar case, rolling cart, graduation robe/cap + pennant, bathroom vanity/mirror/toilet/tub |
-| `08_EscapeRoom_Interactables` | Named `INTERACT_*` Empty pivots with custom `escape_label` properties for Unity / Unreal / Godot trigger scripts |
-| `09_3DScan_Reference` | Floor-aligned 10,283-point `COLMAP_3DScan_LivingKitchen` reference cloud (hidden by default — toggle visibility in Outliner) |
-| `10_Lighting_Cameras` | Golden afternoon sun, per-room area lights, and 5 verification cameras |
-
-### Importing into Unity / Unreal / Godot
-- **Godot 4 / Three.js / WebGL:** Drag & drop `exports/apartment_escape_room.glb` directly — all 5 real photo textures, PBR materials, hinged door origins, and `INTERACT_*` markers are embedded.
-- **Unity / Unreal Engine 5:** Import `exports/apartment_escape_room.fbx` (or `.glb` via glTFast / Interchange); hinged doors already have their pivot origins set on the hinge axis so rotating around local `Y` (or `Z` in Unreal) swings them smoothly.
+| `GET /api/graph[?guest=1]` | Load full Home Graph (or server-redacted Guest Graph) |
+| `POST /api/command` | Natural-language spatial search, `put/add` item, `save` file, or `bom <project>` check |
+| `POST /api/agent` | Room-aware Spatial Agent (local offline engine + optional Gemini 2.5 Flash) |
+| `POST /api/node/add-item` / `delete-item` | Add/remove physical hardware items (`Atoms`) |
+| `POST /api/node/add-file` / `delete-file` | Attach/remove digital files or URLs (`Bits`) |
+| `POST /api/node/notes` | Save persistent spatial notes / Hallway Whiteboard |
+| `GET /api/fs/list?path=...` & `POST /api/node/mount-folder` | Browse & mount real local PC folders to any spatial node |
+| `POST /api/open-local` | Launch a local PC file natively via Windows `os.startfile` |
+| `POST /api/node/photo` & `POST /api/wall-art` | Upload drawer/shelf photos (+ optional Gemini Vision) or live 3D Wall Art |
+| `POST /api/node/device` & `POST /api/device/trigger` | Link & trigger WLED Pick-to-Light, Moonraker/OctoPrint printers, or smart lamps |
+| `GET/POST /api/presence/heartbeat`, `/api/chat`, `/api/tv/sync`, `/api/guest-access` | Phase 5 multiplayer 3D avatars, lounge chat, synced TV co-watch, and studio guest lock |
+| `GET /api/inbox` & `POST /api/inbox/add` / `dismiss` | Front Door Comms Concierge & Doorman auto-triage |
 
 ---
 
@@ -160,57 +150,50 @@ Open **`blender/apartment_escape_room.blend`** in Blender 5.3+. Every room and p
 ```text
 vaughn-apt/
 ├── README.md
-├── launch_walkthrough.bat          # One-click local web server + browser launch
-├── launch_brush_splat.bat          # Native RTX GPU viewer for apartment_splat.ply
+├── launch_walkthrough.bat              # Starts Home OS Server + opens browser
+├── launch_brush_splat.bat              # Opens apartment_splat.ply in native Brush GPU viewer
+├── data/
+│   └── home_graph.json                 # Persistent 14-node Spatial Home Graph (Atoms + Bits + IoT)
+├── docs/
+│   └── REALITY_OS_ARCHITECTURE.md      # Full Spatial Home OS & Reality Twin blueprint
 ├── blender/
-│   └── apartment_escape_room.blend # Editable Blender 5.3 scene (packed textures)
+│   └── apartment_escape_room.blend     # Editable Blender 5.3 scene (10 collections, packed textures)
 ├── exports/
-│   ├── apartment_escape_room.glb   # glTF 2.0 (386 meshes, 45 materials, 5 images)
-│   └── apartment_escape_room.fbx   # FBX with embedded textures
-├── renders/                        # 5 Blender 5.3 EEVEE preview renders
+│   ├── apartment_escape_room.glb       # glTF 2.0 (386 meshes, 45 materials, 5 embedded images)
+│   └── apartment_escape_room.fbx       # FBX for Unity / Unreal Engine
+├── renders/                            # Blender EEVEE renders + v1/v2 3DGS showcase comparisons
 ├── scan/
-│   ├── floorplan_analysis.png      # Gravity-aligned SfM top-down & elevation plots
-│   ├── rooms_floorplan_comparison.png
-│   ├── living_scan_aligned.ply     # 10,283-point floor-aligned COLMAP point cloud
-│   ├── living_scan_threejs.json    # WebGL point-cloud overlay dataset
-│   └── splat/
-│       ├── apartment_splat.ply     # Trained Brush 3D Gaussian Splat
-│       └── eval_8000/              # Rendered splat evaluation frames
+│   ├── floorplan_analysis.png          # Gravity-aligned SfM top-down & elevation plots
+│   ├── living_scan_aligned.ply         # 10,283-point floor-aligned COLMAP point cloud
+│   ├── living_scan_threejs.json        # WebGL point-cloud overlay dataset
+│   ├── splat/apartment_splat.ply       # Crisp v2 25k-step floater-pruned, gravity-aligned 3DGS (55.6 MB)
+│   └── splat_v2/eval_25000/            # 12 high-res 25k-step 3DGS eval renders
 ├── scripts/
-│   ├── extract_frames.py           # FFmpeg + OpenCV Laplacian blur filter
-│   ├── run_sfm.py                  # pycolmap 4.2.1 full-apartment multi-zone SfM
-│   ├── align_scan_to_level.py      # RANSAC floor-plane alignment & metric scaling
-│   ├── build_crisp_3dgs_dataset.py # Dense 4096-SIFT SfM + zero-distortion PINHOLE undistorter
-│   ├── postprocess_splat.py        # Binary PLY floater pruning & quaternion gravity alignment
-│   └── build_apartment_blender.py  # Reproducible Blender 5.3 level generator
-├── textures/                       # Real cropped apartment & skyline textures
+│   ├── home_os_server.py               # Zero-dependency Spatial Home OS server (Phases 1–5)
+│   ├── test_home_os.py                 # Automated Phases 1–5 backend test suite
+│   ├── scan_my_home.py                 # One-command Scan-Your-Own-Home onboarding CLI
+│   ├── extract_frames.py               # FFmpeg + OpenCV Laplacian blur filter
+│   ├── run_sfm.py                      # Full-apartment multi-zone pycolmap SfM
+│   ├── build_crisp_3dgs_dataset.py     # Dense 4096-SIFT SfM + zero-distortion PINHOLE undistorter
+│   ├── postprocess_splat.py            # Binary PLY floater pruning & quaternion gravity alignment
+│   ├── align_scan_to_level.py          # RANSAC floor-plane alignment for Blender/Three.js
+│   └── build_apartment_blender.py      # Reproducible Blender 5.3 modular level generator
+├── textures/                           # Real cropped skyline, rug, wall art, whiteboard & vinyl textures
 └── web/
-    ├── index.html                  # First-Person Apartment Escape Room
-    ├── app.js                      # Three.js controls, collisions, puzzles, Web Audio
-    ├── styles.css
-    └── splat.html                  # Browser 3D Gaussian Splat Viewer
+    ├── home_os.html / .css / .js       # Spatial Home OS (Phases 1–5 Complete)
+    ├── index.html / styles.css / app.js# Playable First-Person Escape Room
+    └── splat.html                      # Browser 3D Gaussian Splat Viewer
 ```
 
 ---
 
-## Reproducing Locally
+## Running Tests & Scanning Your Own Home
 
 ```powershell
-# 1. Create Python 3.12 virtual environment
-uv venv .venv --python 3.12
-uv pip install --python .venv\Scripts\python.exe pycolmap opencv-python-headless numpy pillow matplotlib
+# Run automated Phases 1–5 verification suite
+.venv\Scripts\python.exe scripts\test_home_os.py
+node --check web\home_os.js
 
-# 2. Extract sharp frames, run SfM, align point cloud, and rebuild Blender + GLB/FBX
-.venv\Scripts\python.exe scripts\extract_frames.py
-.venv\Scripts\python.exe scripts\run_sfm.py
-.venv\Scripts\python.exe scripts\align_scan_to_level.py
-& "C:\Program Files\Blender Foundation\Blender 5.3\blender.exe" --background --python scripts\build_apartment_blender.py
-
-# 3. Rebuild crisp v2 3D Gaussian Splat (requires Brush binary in tools/brush/)
-.venv\Scripts\python.exe scripts\build_crisp_3dgs_dataset.py
-tools\brush\brush_app.exe scan\colmap_v2_pinhole --total-steps 25000 --refine-every 150 --growth-stop-iter 15000 --growth-grad-threshold 0.00003 --max-splats 1200000 --max-resolution 1280 --sh-degree 2 --ssim-weight 0.25 --export-every 25000 --export-path scan\splat_v2 --export-name apartment_splat_raw.ply
-.venv\Scripts\python.exe scripts\postprocess_splat.py
-
-# 4. Launch web walkthrough & 3DGS viewer
-python -m http.server 8765
+# Turn ANY new smartphone walkthrough video into a crisp 3DGS + Spatial Home OS
+.venv\Scripts\python.exe scripts\scan_my_home.py --video path\to\your_walkthrough.mov --steps 25000
 ```

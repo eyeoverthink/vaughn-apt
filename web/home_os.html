@@ -40,12 +40,20 @@
     </div>
 
     <nav class="mode-nav">
+      <button id="btn-guests-toggle" class="nav-pill guest-pill" title="Open Guests, Doorbell Comms &amp; Lounge Chat">👥 Guests (<span id="guest-count">1</span>)</button>
       <button id="btn-agent-toggle" class="nav-pill agent-pill" title="Open Room-Aware Spatial Agent (Tab)">🤖 Agent</button>
       <a class="nav-pill active" href="home_os.html">Home OS</a>
       <a class="nav-pill" href="index.html">Escape Room</a>
       <a class="nav-pill" href="splat.html">3DGS Splat</a>
     </nav>
   </header>
+
+  <!-- Synced Living Room TV Co-Watch Banner -->
+  <div id="cowatch-banner" class="cowatch-banner hidden">
+    <span id="cowatch-text">📺 Living Room TV Co-Watch Active</span>
+    <button id="cowatch-join" class="mini-btn accent" style="flex:0 0 auto;">Join TV</button>
+    <button id="cowatch-hide" class="icon-close">✕</button>
+  </div>
 
   <!-- Left Spatial Directory Sidebar -->
   <aside id="sidebar" class="sidebar">
@@ -88,6 +96,34 @@
     </select>
     <input id="stereo-vol" type="range" min="0" max="100" value="35" title="Stereo Volume" />
   </div>
+
+  <!-- Floating Guests, Front Door Comms Concierge & Lounge Chat Drawer (Phase 5) -->
+  <aside id="guests-drawer" class="guests-drawer hidden">
+    <div class="agent-head">
+      <div>
+        <div class="agent-title" style="color:#7ee787;">👥 GUESTS &amp; FRONT DOOR CONCIERGE</div>
+        <div id="guests-sub" class="agent-ctx">Live 3D Avatars · Comms Triage · Co-Watch</div>
+      </div>
+      <button id="guests-close" class="icon-close">✕</button>
+    </div>
+    <div class="guests-body">
+      <div class="special-row">
+        <button id="btn-open-guest-tab" class="mini-btn accent">↗ Open Guest Tab</button>
+        <button id="btn-ring-doorbell" class="mini-btn">🔔 Ring Doorbell</button>
+        <button id="btn-unlock-studio" class="mini-btn">🔒 Studio Locked</button>
+      </div>
+      <div class="sec-head" style="margin-top:6px;"><span>IN THE APARTMENT NOW</span></div>
+      <ul id="visitors-list" class="item-list"></ul>
+      <div class="sec-head" style="margin-top:6px;"><span>FRONT DOOR COMMS INBOX (DOORMAN TRIAGE)</span></div>
+      <ul id="inbox-list" class="item-list"></ul>
+      <div class="sec-head" style="margin-top:6px;"><span>LIVING ROOM LOUNGE CHAT</span></div>
+      <div id="lounge-chat-log" class="agent-log" style="max-height:130px;padding:6px 0;"></div>
+    </div>
+    <form id="lounge-chat-form" class="agent-form">
+      <input id="lounge-chat-input" type="text" placeholder="Chat with everyone in the apartment..." autocomplete="off" />
+      <button type="submit" class="btn-add">Send</button>
+    </form>
+  </aside>
 
   <!-- Floating Room-Aware Spatial Agent Drawer (Bottom Center-Right) -->
   <aside id="agent-drawer" class="agent-drawer hidden">

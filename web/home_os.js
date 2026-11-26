@@ -306,21 +306,30 @@ function renderSpecialPanel(node) {
   if (node.category === 'tv') {
     inspSpecial.classList.remove('hidden');
     inspSpecial.innerHTML = `
-      <div class="special-title">LIVING ROOM TV — LIVE MEDIA DECK</div>
+      <div class="special-title">LIVING ROOM TV — LIVE MEDIA &amp; CO-WATCH DECK</div>
       <div class="special-row">
         <button class="mini-btn accent" id="tv-lofi">▶ YouTube Lo-Fi Live</button>
         <button class="mini-btn" id="tv-custom">Embed YouTube URL</button>
+        <button class="mini-btn" id="tv-share">📡 Share to Room TV</button>
       </div>
     `;
-    inspSpecial.querySelector('#tv-lofi').addEventListener('click', () => {
-      openMediaLightbox('Living Room TV — Lofi Girl Radio', '<iframe src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>');
-    });
+    const launchTV = (title, embed, broadcast = false) => {
+      openMediaLightbox(title, `<iframe src="${embed}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`);
+      if (broadcast) {
+        apiPost('/api/tv/sync', { title, embed_url: embed, shared_by: myDisplayName }).then(() => showToast('Shared video to Living Room TV for all connected guests!'));
+      }
+    };
+    inspSpecial.querySelector('#tv-lofi').addEventListener('click', () => launchTV('Living Room TV — Lofi Girl Radio', 'https://www.youtube.com/embed/jfKfPfyJRdk', false));
     inspSpecial.querySelector('#tv-custom').addEventListener('click', () => {
       const url = prompt('Paste a YouTube video URL (e.g. https://www.youtube.com/watch?v=...)');
       if (!url) return;
       const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
-      const embed = m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1` : url;
-      openMediaLightbox('Living Room TV', `<iframe src="${embed}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`);
+      launchTV('Living Room TV', m ? `https://www.youtube.com/embed/${m[1]}` : url, false);
+    });
+    inspSpecial.querySelector('#tv-share').addEventListener('click', () => {
+      const url = prompt('Share YouTube URL to everyone in the Living Room (leave blank for Lo-Fi Radio):') || 'https://www.youtube.com/embed/jfKfPfyJRdk';
+      const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+      launchTV('Shared Living Room Co-Watch', m ? `https://www.youtube.com/embed/${m[1]}` : url, true);
     });
   } else if (node.category === 'favorites') {
     inspSpecial.classList.remove('hidden');
@@ -909,20 +918,249 @@ document.getElementById('stereo-vol').addEventListener('input', (e) => {
   if (stereoGain) stereoGain.gain.value = Number(e.target.value) / 100;
 });
 
+// ---------------------------------------------------------------------------
+// Phase 5: Live 3D Multiplayer Guest Avatars, Doorbell Comms & Co-Watch Sync
+// ---------------------------------------------------------------------------
+const urlParams = new URLSearchParams(window.location.search);
+const myClientId = `u_${Math.random().toString(36).slice(2, 9)}`;
+const myDisplayName = urlParams.get('name') || (guestMode ? `Guest-${myClientId.slice(-3).toUpperCase()}` : 'Vaughn (Owner)');
+const guestsDrawer = document.getElementById('guests-drawer');
+const guestCountEl = document.getElementById('guest-count');
+const visitorsListEl = document.getElementById('visitors-list');
+const inboxListEl = document.getElementById('inbox-list');
+const loungeChatLog = document.getElementById('lounge-chat-log');
+const loungeChatInput = document.getElementById('lounge-chat-input');
+const cowatchBanner = document.getElementById('cowatch-banner');
+const cowatchText = document.getElementById('cowatch-text');
+let lastSharedTvTs = 0;
+let activeSharedTv = null;
+let studioUnlocked = false;
+
+const avatarGroup = new THREE.Group();
+scene.add(avatarGroup);
+const avatarMap = new Map(); // id -> { group, targetPos }
+
+function makeNameSprite(label, colHex) {
+  const cvs = document.createElement('canvas');
+  cvs.width = 256; cvs.height = 64;
+  const ctx = cvs.getContext('2d');
+  ctx.fillStyle = 'rgba(10, 16, 26, 0.85)';
+  ctx.beginPath(); ctx.roundRect(8, 10, 240, 44, 14); ctx.fill();
+  ctx.strokeStyle = colHex; ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = '#f0f6fc'; ctx.font = 'bold 22px Segoe UI, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, 128, 33);
+  const tex = new THREE.CanvasTexture(cvs);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+  sp.scale.set(0.95, 0.24, 1);
+  sp.position.y = 1.65;
+  return sp;
+}
+
+function syncAvatars(visitors) {
+  guestCountEl.textContent = String(visitors.length);
+  const alive = new Set();
+  visitorsListEl.innerHTML = '';
+
+  for (const v of visitors) {
+    const li = document.createElement('li');
+    li.className = 'item-row';
+    li.innerHTML = `
+      <div class="item-main">
+        <div class="item-name"><span style="color:${v.color}">●</span> ${v.name} ${v.id === myClientId ? '(You)' : ''}</div>
+        <div class="item-sub">${v.role.toUpperCase()} · ${v.room}</div>
+      </div>
+    `;
+    visitorsListEl.appendChild(li);
+
+    if (v.id === myClientId) continue;
+    alive.add(v.id);
+    if (!avatarMap.has(v.id)) {
+      const grp = new THREE.Group();
+      const col = new THREE.Color(v.color || '#7ee787');
+      const body = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.18, 0.55, 8, 16),
+        new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.45, roughness: 0.3 })
+      );
+      body.position.y = 0.72;
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.16, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0xf4f8ff, emissive: col, emissiveIntensity: 0.25 })
+      );
+      head.position.y = 1.24;
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.24, 0.32, 24),
+        new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })
+      );
+      ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03;
+      grp.add(body, head, ring, makeNameSprite(v.name, v.color || '#7ee787'));
+      grp.position.set(v.pos[0], 0, v.pos[2]);
+      avatarGroup.add(grp);
+      avatarMap.set(v.id, { group: grp, targetPos: new THREE.Vector3(v.pos[0], 0, v.pos[2]) });
+    } else {
+      avatarMap.get(v.id).targetPos.set(v.pos[0], 0, v.pos[2]);
+    }
+  }
+  for (const [id, entry] of avatarMap.entries()) {
+    if (!alive.has(id)) {
+      avatarGroup.remove(entry.group);
+      avatarMap.delete(id);
+    }
+  }
+}
+
+function renderLoungeChat(messages) {
+  loungeChatLog.innerHTML = '';
+  for (const m of messages) {
+    const d = document.createElement('div');
+    d.className = `agent-msg ${m.sender === myDisplayName ? 'user' : 'bot'}`;
+    d.textContent = `${m.sender}: ${m.text}`;
+    loungeChatLog.appendChild(d);
+  }
+  loungeChatLog.scrollTop = loungeChatLog.scrollHeight;
+}
+
+function playDoorbellChime() {
+  try {
+    const ctx = stereoCtx || new (window.AudioContext || window.webkitAudioContext)();
+    [[659.25, 0], [523.25, 0.22]].forEach(([f, delay]) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = f;
+      g.gain.setValueAtTime(0.16, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.55);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.58);
+    });
+  } catch (_) {}
+}
+
+function renderInbox(inbox) {
+  inboxListEl.innerHTML = '';
+  for (const m of inbox) {
+    const li = document.createElement('li');
+    li.className = 'item-row';
+    const tierCls = m.tier === 'vip' ? 'tier-vip' : (m.tier === 'muted' ? 'tier-muted' : 'tier-standard');
+    li.innerHTML = `
+      <div class="item-main">
+        <div class="item-name">[${m.channel}] ${m.from}</div>
+        <div class="item-sub">${m.subject} · <span class="${tierCls}">${m.status.replace('_', ' ').toUpperCase()}</span></div>
+      </div>
+      <button class="btn-del" title="Dismiss">✕</button>
+    `;
+    li.querySelector('.btn-del').addEventListener('click', async () => {
+      const r = await apiPost('/api/inbox/dismiss', { id: m.id });
+      if (r.inbox) renderInbox(r.inbox);
+    });
+    inboxListEl.appendChild(li);
+  }
+}
+
+async function fetchGraphFromServer() {
+  const g = await fetch(`/api/graph${guestMode ? '?guest=1' : ''}`).then((r) => r.json());
+  homeGraph = g;
+  studioUnlocked = Boolean(g.studio_unlocked);
+  const uBtn = document.getElementById('btn-unlock-studio');
+  if (uBtn) {
+    uBtn.textContent = studioUnlocked ? '🔓 Studio Unlocked' : '🔒 Studio Locked';
+    uBtn.classList.toggle('active', studioUnlocked);
+    uBtn.style.display = guestMode ? 'none' : '';
+  }
+  applyMood(g.lighting_mood || 'afternoon');
+  if (g.custom_wall_art) applyWallArtTexture(g.custom_wall_art);
+  if (g.comms_inbox) renderInbox(g.comms_inbox);
+  buildPins();
+  renderSidebar();
+}
+
+async function sendPresenceHeartbeat() {
+  try {
+    const cur = homeGraph.nodes.find((n) => n.id === selectedNodeId);
+    const pos = cur ? cur.position_threejs : [controls.target.x, 1.0, controls.target.z];
+    const room = cur ? cur.room : 'Corner Living Room';
+    const res = await apiPost('/api/presence/heartbeat', {
+      id: myClientId,
+      name: myDisplayName,
+      guest: guestMode,
+      pos,
+      room,
+      color: guestMode ? '#7ee787' : '#58d5ff',
+    });
+    if (res.visitors) syncAvatars(res.visitors);
+    if (res.chat) renderLoungeChat(res.chat);
+    if (res.studio_unlocked !== undefined && res.studio_unlocked !== studioUnlocked) {
+      studioUnlocked = res.studio_unlocked;
+      if (guestMode) fetchGraphFromServer();
+    }
+    if (res.shared_tv?.embed_url && res.shared_tv.updated_at > lastSharedTvTs) {
+      lastSharedTvTs = res.shared_tv.updated_at;
+      activeSharedTv = res.shared_tv;
+      cowatchText.textContent = `📺 ${res.shared_tv.shared_by} shared "${res.shared_tv.title}" on Living Room TV`;
+      cowatchBanner.classList.remove('hidden');
+    }
+  } catch (_) {}
+}
+
+document.getElementById('btn-guests-toggle').addEventListener('click', () => {
+  guestsDrawer.classList.toggle('hidden');
+  document.getElementById('btn-guests-toggle').classList.toggle('on', !guestsDrawer.classList.contains('hidden'));
+  fetch('/api/inbox').then((r) => r.json()).then((d) => { if (d.inbox) renderInbox(d.inbox); }).catch(() => {});
+});
+document.getElementById('guests-close').addEventListener('click', () => {
+  guestsDrawer.classList.add('hidden');
+  document.getElementById('btn-guests-toggle').classList.remove('on');
+});
+document.getElementById('btn-open-guest-tab').addEventListener('click', () => {
+  const name = prompt('Guest name for the live second tab:', 'Alex') || 'Alex';
+  window.open(`home_os.html?guest=1&name=${encodeURIComponent(name)}`, '_blank');
+});
+document.getElementById('btn-ring-doorbell').addEventListener('click', async () => {
+  playDoorbellChime();
+  const samples = [
+    ['Maya (VIP Friend)', 'SMS', 'Coming over to hang out in the Living Room!'],
+    ['Digikey Order', 'Email', 'Your Basys & sensor package arrived at lobby'],
+    ['Promo Deals', 'Email', 'Unsubscribe newsletter flash sale offer'],
+  ];
+  const pick = samples[Math.floor(Math.random() * samples.length)];
+  const r = await apiPost('/api/inbox/add', { from: pick[0], channel: pick[1], subject: pick[2] });
+  if (r.inbox) {
+    renderInbox(r.inbox);
+    showToast(`🔔 Doorbell! Doorman triaged ${r.item.from} → ${r.item.status.replace('_', ' ').toUpperCase()}`, 4000);
+  }
+});
+document.getElementById('btn-unlock-studio').addEventListener('click', async () => {
+  const r = await apiPost('/api/guest-access', { studio_unlocked: !studioUnlocked });
+  studioUnlocked = r.studio_unlocked;
+  const uBtn = document.getElementById('btn-unlock-studio');
+  uBtn.textContent = studioUnlocked ? '🔓 Studio Unlocked' : '🔒 Studio Locked';
+  uBtn.classList.toggle('active', studioUnlocked);
+  showToast(studioUnlocked ? 'Studio Office temporarily unlocked for Guests!' : 'Studio Office locked — Private to Owner.');
+});
+document.getElementById('lounge-chat-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = loungeChatInput.value.trim();
+  if (!text) return;
+  loungeChatInput.value = '';
+  const r = await apiPost('/api/chat', { sender: myDisplayName, role: guestMode ? 'guest' : 'owner', text });
+  if (r.chat) renderLoungeChat(r.chat);
+});
+document.getElementById('cowatch-join').addEventListener('click', () => {
+  if (!activeSharedTv) return;
+  selectNode('apt://living/tv', true);
+  openMediaLightbox(activeSharedTv.title, `<iframe src="${activeSharedTv.embed_url}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`);
+});
+document.getElementById('cowatch-hide').addEventListener('click', () => cowatchBanner.classList.add('hidden'));
+
 // Boot
-fetch('/api/graph')
-  .then((r) => r.json())
-  .then((g) => {
-    homeGraph = g;
-    applyMood(g.lighting_mood || 'afternoon');
-    if (g.custom_wall_art) applyWallArtTexture(g.custom_wall_art);
+fetchGraphFromServer()
+  .then(() => {
     if (guestMode) {
       const btn = document.getElementById('btn-guest-mode');
       btn.textContent = 'Guest View';
       btn.classList.add('active');
     }
-    buildPins();
-    renderSidebar();
+    sendPresenceHeartbeat();
+    setInterval(sendPresenceHeartbeat, 2200);
   })
   .catch(() => { statsLine.textContent = 'Start scripts/home_os_server.py to enable persistence'; });
 
@@ -938,6 +1176,10 @@ function animate() {
   const t = clock.elapsedTime;
   for (const m of pinMeshes) {
     m.position.y = m.userData.baseY + Math.sin(t * 2.4 + m.userData.baseY * 4) * 0.03;
+  }
+  for (const entry of avatarMap.values()) {
+    entry.group.position.lerp(entry.targetPos, 0.08);
+    entry.group.position.y = Math.sin(t * 2.2) * 0.04;
   }
   if (highlightGroup.visible) {
     const s = 1.0 + Math.sin(t * 5.0) * 0.16;
