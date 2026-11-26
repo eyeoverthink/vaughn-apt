@@ -18,6 +18,16 @@ const bitsList = document.getElementById('bits-list');
 const atomsCount = document.getElementById('atoms-count');
 const bitsCount = document.getElementById('bits-count');
 const inspNotes = document.getElementById('insp-notes');
+const shelfPhotoWrap = document.getElementById('shelf-photo-wrap');
+const shelfPhotoImg = document.getElementById('shelf-photo-img');
+const inputMountFolder = document.getElementById('input-mount-folder');
+const fsList = document.getElementById('fs-list');
+const devList = document.getElementById('dev-list');
+const devCount = document.getElementById('dev-count');
+const agentDrawer = document.getElementById('agent-drawer');
+const agentContext = document.getElementById('agent-context');
+const agentLog = document.getElementById('agent-log');
+const agentInput = document.getElementById('agent-input');
 const mediaModal = document.getElementById('media-modal');
 const mediaTitle = document.getElementById('media-title');
 const mediaContent = document.getElementById('media-content');
@@ -95,11 +105,20 @@ function applyMood(mood) {
 }
 
 // ---------------------------------------------------------------------------
-// Load Apartment GLB (hide Ceiling for Dollhouse clarity!) + COLMAP Overlay
+// Load Apartment GLB + Live Custom Wall Art Texture Swap + COLMAP Overlay
 // ---------------------------------------------------------------------------
-let ceilingMesh = null;
+let wallArtMesh = null;
 let printerHeadMesh = null;
 let printerSweepUntil = 0;
+const texLoader = new THREE.TextureLoader();
+
+function applyWallArtTexture(relPath) {
+  if (!wallArtMesh || !relPath) return;
+  texLoader.load(`../${relPath}?t=${Date.now()}`, (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    wallArtMesh.material = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5 });
+  });
+}
 
 new GLTFLoader().load('../exports/apartment_escape_room.glb', (gltf) => {
   const root = gltf.scene;
@@ -112,11 +131,12 @@ new GLTFLoader().load('../exports/apartment_escape_room.glb', (gltf) => {
         c.material.opacity = 0.14;
         c.material.depthWrite = false;
       }
-      if (c.name === 'Ceiling_Main') {
-        ceilingMesh = c;
-        c.visible = false; // Open dollhouse roof by default for effortless spatial overview!
-      }
+      if (c.name === 'Ceiling_Main') c.visible = false;
       if (c.name === 'Off_3DPrinter1_Head') printerHeadMesh = c;
+      if (c.name === 'Din_WallArt_CanvasTop') {
+        wallArtMesh = c;
+        if (homeGraph.custom_wall_art) applyWallArtTexture(homeGraph.custom_wall_art);
+      }
     }
   });
   scene.add(root);
@@ -137,17 +157,18 @@ fetch('../scan/living_scan_threejs.json')
   .catch(() => {});
 
 // ---------------------------------------------------------------------------
-// Home Graph State, 3D Spatial Pins & Fly-To Highlight Beacon
+// Home Graph State, 3D Spatial Pins & Highlight Beacon
 // ---------------------------------------------------------------------------
 let homeGraph = { nodes: [] };
 let selectedNodeId = null;
+let currentFsFolder = '';
+let currentFsParent = '';
 let guestMode = new URLSearchParams(window.location.search).get('guest') === '1';
 
 const pinGroup = new THREE.Group();
 scene.add(pinGroup);
 const pinMeshes = [];
 
-// Pulsing 3D spotlight ring & vertical laser beam for active search/selected shelf
 const highlightGroup = new THREE.Group();
 highlightGroup.visible = false;
 const ringMesh = new THREE.Mesh(
@@ -163,7 +184,6 @@ beamMesh.position.y = 1.1;
 highlightGroup.add(ringMesh, beamMesh);
 scene.add(highlightGroup);
 
-// Smooth Camera Fly-To Animation
 let flyAnim = null;
 function flyCameraTo(pos, look, durMs = 780) {
   flyAnim = {
@@ -181,6 +201,15 @@ function showToast(msg, ms = 3200) {
   toastEl.classList.remove('hidden');
   clearTimeout(toastEl._t);
   toastEl._t = setTimeout(() => toastEl.classList.add('hidden'), ms);
+}
+
+async function apiPost(url, payload) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
 }
 
 function buildPins() {
@@ -203,7 +232,6 @@ function buildPins() {
     );
     halo.rotation.x = -Math.PI / 2;
     sphere.add(halo);
-
     pinGroup.add(sphere);
     pinMeshes.push(sphere);
   }
@@ -241,7 +269,7 @@ function renderSidebar() {
       `;
       btn.addEventListener('click', () => {
         if (lockedForGuest) {
-          showToast(`Private zone (${n.room}) — locked in Guest View! Switch back to Owner View.`);
+          showToast(`Private zone (${n.room}) — locked in Guest View!`);
           return;
         }
         selectNode(n.id, true);
@@ -261,6 +289,15 @@ document.getElementById('media-close').addEventListener('click', () => {
   mediaModal.classList.add('hidden');
   mediaContent.innerHTML = '';
 });
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
 
 function renderSpecialPanel(node) {
   inspSpecial.innerHTML = '';
@@ -285,6 +322,28 @@ function renderSpecialPanel(node) {
       const embed = m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1` : url;
       openMediaLightbox('Living Room TV', `<iframe src="${embed}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`);
     });
+  } else if (node.category === 'favorites') {
+    inspSpecial.classList.remove('hidden');
+    inspSpecial.innerHTML = `
+      <div class="special-title">DINING WALL FRAME — LIVE 3D ART SWAP</div>
+      <div class="special-row">
+        <label class="mini-btn accent" style="cursor:pointer;text-align:center;">
+          🖼 Hang Custom Image on 3D Wall
+          <input id="input-wall-art" type="file" accept="image/*" style="display:none;" />
+        </label>
+      </div>
+    `;
+    inspSpecial.querySelector('#input-wall-art').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const dataUrl = await readFileAsDataUrl(file);
+      const res = await apiPost('/api/wall-art', { data_url: dataUrl });
+      if (res.ok) {
+        homeGraph = res.graph;
+        applyWallArtTexture(res.path);
+        showToast('Hung new custom art directly onto your 3D Dining Wall!');
+      }
+    });
   } else if (node.category === 'stereo') {
     inspSpecial.classList.remove('hidden');
     inspSpecial.innerHTML = `
@@ -294,28 +353,19 @@ function renderSpecialPanel(node) {
         <button class="mini-btn" id="st-bt">Bluetooth Output Ready</button>
       </div>
     `;
-    inspSpecial.querySelector('#st-toggle').addEventListener('click', () => {
-      toggleStereo();
-      renderSpecialPanel(node);
-    });
-    inspSpecial.querySelector('#st-bt').addEventListener('click', () => {
-      showToast('Audio routes through your active Windows default / Bluetooth speaker output!');
-    });
+    inspSpecial.querySelector('#st-toggle').addEventListener('click', () => { toggleStereo(); renderSpecialPanel(node); });
+    inspSpecial.querySelector('#st-bt').addEventListener('click', () => showToast('Routes through your active Windows / Bluetooth speaker output!'));
   } else if (node.category === 'hardware' && node.id.includes('printers')) {
     inspSpecial.classList.remove('hidden');
     inspSpecial.innerHTML = `
-      <div class="special-title">3D PRINTER FARM — CYBER-PHYSICAL HOOKS</div>
+      <div class="special-title">3D PRINTER FARM — CYBER-PHYSICAL TELEMETRY</div>
       <div class="special-row">
         <button class="mini-btn accent" id="pr-test">⚡ Test Extruder Pulse</button>
-        <button class="mini-btn" id="pr-cfg">Moonraker / OctoPrint Ready</button>
       </div>
     `;
     inspSpecial.querySelector('#pr-test').addEventListener('click', () => {
       printerSweepUntil = performance.now() + 3000;
       showToast('Printer #1 test sweep triggered in 3D Studio!');
-    });
-    inspSpecial.querySelector('#pr-cfg').addEventListener('click', () => {
-      showToast('Phase 3 hook ready: add your Klipper/Moonraker or Bambu LAN IP in data/home_graph.json!');
     });
   } else if (node.category === 'routines') {
     inspSpecial.classList.remove('hidden');
@@ -330,13 +380,13 @@ function renderSpecialPanel(node) {
       applyMood('studio');
       if (!stereoPlaying) toggleStereo();
       selectNode('apt://studio/white-cube-shelf/shelf-2', true);
-      showToast('Studio Build Routine: Crisp desk lighting + stereo + Shelf #2 ready!');
+      showToast('Studio Build Routine active!');
     });
     inspSpecial.querySelector('#rt-lounge').addEventListener('click', () => {
       applyMood('lounge');
       if (!stereoPlaying) toggleStereo();
       selectNode('apt://living/tv', true);
-      showToast('Guest Lounge Routine: Ambient warm lighting + stereo + Living Room TV!');
+      showToast('Guest Lounge Routine active!');
     });
   } else if (node.category === 'guests') {
     inspSpecial.classList.remove('hidden');
@@ -350,12 +400,76 @@ function renderSpecialPanel(node) {
   }
 }
 
+// Phase 2: Local Folder Browser inside Inspector
+async function loadFolderListing(folderPath) {
+  fsList.innerHTML = '';
+  if (!folderPath) {
+    fsList.innerHTML = '<li class="item-row"><div class="item-sub">Mount any local folder (e.g. docs, scripts, or C:\\Users\\...) to browse real PC files right on this shelf.</div></li>';
+    return;
+  }
+  const res = await fetch(`/api/fs/list?path=${encodeURIComponent(folderPath)}`).then((r) => r.json());
+  if (!res.ok) {
+    fsList.innerHTML = `<li class="item-row"><div class="item-sub">${res.error}</div></li>`;
+    return;
+  }
+  currentFsFolder = res.folder;
+  currentFsParent = res.parent;
+  inputMountFolder.value = res.folder;
+
+  for (const ent of res.entries.slice(0, 35)) {
+    const li = document.createElement('li');
+    li.className = 'item-row';
+    li.innerHTML = `
+      <div class="item-main">
+        <div class="item-name">${ent.is_dir ? '📁 ' : '📄 '}${ent.name}</div>
+        <div class="item-sub">${ent.is_dir ? 'Folder' : `${ent.size_kb} KB`}</div>
+      </div>
+      <div class="row-actions">
+        <button class="btn-open">${ent.is_dir ? 'Into' : 'Open'}</button>
+        ${ent.is_dir ? '' : '<button class="btn-open" data-pin="1">Pin</button>'}
+      </div>
+    `;
+    li.querySelector('.btn-open').addEventListener('click', async () => {
+      if (ent.is_dir) loadFolderListing(ent.path);
+      else {
+        const r = await apiPost('/api/open-local', { path: ent.path });
+        showToast(r.ok ? `Opened on PC: ${ent.name}` : (r.error || 'Could not open'));
+      }
+    });
+    const pinBtn = li.querySelector('[data-pin]');
+    if (pinBtn) {
+      pinBtn.addEventListener('click', async () => {
+        if (!selectedNodeId) return;
+        const r = await apiPost('/api/node/add-file', { node_id: selectedNodeId, name: ent.name, path: ent.path, type: 'file' });
+        if (r.graph) { homeGraph = r.graph; refreshUI(true); showToast(`Pinned ${ent.name} to this shelf!`); }
+      });
+    }
+    fsList.appendChild(li);
+  }
+}
+
+document.getElementById('form-mount-folder').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!selectedNodeId) return;
+  const folder = inputMountFolder.value.trim();
+  const r = await apiPost('/api/node/mount-folder', { node_id: selectedNodeId, folder });
+  if (r.graph) {
+    homeGraph = r.graph;
+    loadFolderListing(folder);
+    showToast(`Mounted folder to ${selectedNodeId}!`);
+  }
+});
+
+document.getElementById('btn-fs-up').addEventListener('click', () => {
+  if (currentFsParent && currentFsParent !== currentFsFolder) loadFolderListing(currentFsParent);
+});
+
 function selectNode(nodeId, fly = true) {
   const node = homeGraph.nodes.find((n) => n.id === nodeId);
   if (!node) return;
   selectedNodeId = node.id;
+  agentContext.textContent = `Context: ${node.label} (${node.room})`;
 
-  // Position pulsing highlight beacon
   highlightGroup.position.set(node.position_threejs[0], Math.max(0.03, node.position_threejs[1] - 0.14), node.position_threejs[2]);
   highlightGroup.visible = true;
 
@@ -363,13 +477,20 @@ function selectNode(nodeId, fly = true) {
     flyCameraTo(node.camera_view.pos, node.camera_view.look);
   }
 
-  // Populate Inspector Drawer
   inspRoom.textContent = node.room;
   inspPrivacy.textContent = (node.privacy || 'private').toUpperCase();
   inspPrivacy.className = `tag-priv ${node.privacy === 'public' ? 'public' : ''}`;
   inspTitle.textContent = node.label;
   inspUri.textContent = node.id;
   inspNotes.value = node.notes || '';
+
+  // Shelf photo preview
+  if (node.photo) {
+    shelfPhotoImg.src = `../${node.photo}?t=${Date.now()}`;
+    shelfPhotoWrap.classList.remove('hidden');
+  } else {
+    shelfPhotoWrap.classList.add('hidden');
+  }
 
   renderSpecialPanel(node);
 
@@ -420,6 +541,31 @@ function selectNode(nodeId, fly = true) {
     bitsList.appendChild(li);
   });
 
+  // Mounted folder
+  inputMountFolder.value = node.mounted_folder || '';
+  loadFolderListing(node.mounted_folder || '');
+
+  // Phase 3: Live Hardware Devices
+  const devs = node.live_devices || [];
+  devCount.textContent = String(devs.length);
+  devList.innerHTML = '';
+  devs.forEach((dev, idx) => {
+    const li = document.createElement('li');
+    li.className = 'item-row';
+    li.innerHTML = `
+      <div class="item-main">
+        <div class="item-name">⚡ ${dev.label || dev.type}</div>
+        <div class="item-sub">${dev.type} · ${dev.endpoint || 'Simulated (no LAN IP set)'}</div>
+      </div>
+      <button class="btn-open">Trigger</button>
+    `;
+    li.querySelector('.btn-open').addEventListener('click', async () => {
+      const r = await apiPost('/api/device/trigger', { node_id: node.id, index: idx, action: 'pulse' });
+      showToast(r.message || r.error || 'Triggered!', 3800);
+    });
+    devList.appendChild(li);
+  });
+
   inspector.classList.remove('hidden');
   renderSidebar();
 }
@@ -443,19 +589,9 @@ async function openDigitalArtifact(f) {
     window.open(f.path, '_blank', 'noopener');
     return;
   }
-  // Try opening local file through Home OS backend!
   const res = await apiPost('/api/open-local', { path: f.path });
   if (res.ok) showToast(`Opened on your PC: ${res.opened}`);
   else showToast(res.error || 'Could not open local file');
-}
-
-async function apiPost(url, payload) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
 }
 
 function refreshUI(keepSelected = true) {
@@ -464,7 +600,35 @@ function refreshUI(keepSelected = true) {
   if (keepSelected && selectedNodeId) selectNode(selectedNodeId, false);
 }
 
-// Forms inside Inspector
+// Photo Capture + Quick Maker Chips
+document.getElementById('input-shelf-photo').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file || !selectedNodeId) return;
+  showToast('Uploading shelf photo...');
+  const dataUrl = await readFileAsDataUrl(file);
+  const res = await apiPost('/api/node/photo', { node_id: selectedNodeId, data_url: dataUrl, auto_detect: true });
+  if (res.ok) {
+    homeGraph = res.graph;
+    refreshUI(true);
+    const nDet = (res.detected || []).length;
+    showToast(nDet ? `Photo saved + Gemini Vision auto-tagged ${nDet} hardware items!` : 'Drawer photo saved to shelf! Use quick chips or +Add to tag items.', 4000);
+  }
+});
+
+shelfPhotoImg.addEventListener('click', () => {
+  if (shelfPhotoImg.src) openMediaLightbox('Real Drawer / Shelf Photo', `<img src="${shelfPhotoImg.src}" />`);
+});
+
+document.querySelectorAll('#maker-quick-chips .qchip').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    if (!selectedNodeId) return;
+    const name = btn.dataset.item;
+    const r = await apiPost('/api/node/add-item', { node_id: selectedNodeId, name, qty: 1 });
+    if (r.graph) { homeGraph = r.graph; refreshUI(true); showToast(`Quick-added ${name}!`, 1800); }
+  });
+});
+
+// Inspector Forms
 document.getElementById('form-add-item').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedNodeId) return;
@@ -497,32 +661,84 @@ document.getElementById('form-add-file').addEventListener('submit', async (e) =>
   }
 });
 
+document.getElementById('form-add-device').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!selectedNodeId) return;
+  const type = document.getElementById('input-dev-type').value;
+  const label = document.getElementById('input-dev-label').value.trim();
+  const endpoint = document.getElementById('input-dev-ep').value.trim();
+  const r = await apiPost('/api/node/device', { node_id: selectedNodeId, type, label, endpoint });
+  if (r.graph) {
+    homeGraph = r.graph;
+    document.getElementById('input-dev-label').value = '';
+    document.getElementById('input-dev-ep').value = '';
+    refreshUI(true);
+    showToast(`Linked ${label} (${type}) to ${selectedNodeId}!`);
+  }
+});
+
 document.getElementById('btn-save-notes').addEventListener('click', async () => {
   if (!selectedNodeId) return;
   const r = await apiPost('/api/node/notes', { node_id: selectedNodeId, notes: inspNotes.value });
-  if (r.graph) {
-    homeGraph = r.graph;
-    showToast('Spatial notes saved to data/home_graph.json!');
-  }
+  if (r.graph) { homeGraph = r.graph; showToast('Spatial notes saved!'); }
 });
 
 document.getElementById('insp-close').addEventListener('click', () => {
   inspector.classList.add('hidden');
   highlightGroup.visible = false;
   selectedNodeId = null;
+  agentContext.textContent = 'Context: Full Apartment';
   renderSidebar();
 });
 
 // ---------------------------------------------------------------------------
-// Global Spatial Search & Natural-Language Command Bar
+// Phase 4: Room-Aware Spatial Agent Co-Pilot
+// ---------------------------------------------------------------------------
+function toggleAgentDrawer() {
+  agentDrawer.classList.toggle('hidden');
+  document.getElementById('btn-agent-toggle').classList.toggle('on', !agentDrawer.classList.contains('hidden'));
+  if (!agentDrawer.classList.contains('hidden')) agentInput.focus();
+}
+document.getElementById('btn-agent-toggle').addEventListener('click', toggleAgentDrawer);
+document.getElementById('agent-close').addEventListener('click', toggleAgentDrawer);
+
+function appendAgentMsg(text, who) {
+  const div = document.createElement('div');
+  div.className = `agent-msg ${who}`;
+  div.textContent = text;
+  agentLog.appendChild(div);
+  agentLog.scrollTop = agentLog.scrollHeight;
+}
+
+async function sendToAgent(msg) {
+  if (!msg.trim()) return;
+  appendAgentMsg(msg, 'user');
+  const res = await apiPost('/api/agent', { message: msg, node_id: selectedNodeId });
+  if (res.graph) { homeGraph = res.graph; refreshUI(false); }
+  appendAgentMsg(res.reply || 'Done.', 'bot');
+  if (res.node_id) {
+    const node = homeGraph.nodes.find((n) => n.id === res.node_id);
+    if (!(guestMode && node?.privacy === 'private')) selectNode(res.node_id, true);
+  }
+}
+
+document.getElementById('agent-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const txt = agentInput.value.trim();
+  agentInput.value = '';
+  sendToAgent(txt);
+});
+document.querySelectorAll('.agent-chips .chip-btn').forEach((b) => {
+  b.addEventListener('click', () => sendToAgent(b.dataset.q));
+});
+
+// ---------------------------------------------------------------------------
+// Global Spatial Search & Command Bar
 // ---------------------------------------------------------------------------
 async function runCommand(text) {
   if (!text.trim()) return;
   const res = await apiPost('/api/command', { command: text });
-  if (res.graph) {
-    homeGraph = res.graph;
-    refreshUI(false);
-  }
+  if (res.graph) { homeGraph = res.graph; refreshUI(false); }
   showToast(res.message || 'Done', 4200);
   cmdResults.classList.add('hidden');
   if (res.node_id) {
@@ -531,18 +747,16 @@ async function runCommand(text) {
       showToast('That match is in a Private room — switch to Owner View to inspect it.');
     } else {
       selectNode(res.node_id, true);
+      // Auto-fire Pick-to-Light WLED if configured on the found shelf!
+      const wledIdx = (node?.live_devices || []).findIndex((d) => d.type === 'wled_pick_to_light' && d.endpoint);
+      if (wledIdx >= 0) apiPost('/api/device/trigger', { node_id: node.id, index: wledIdx, action: 'pulse' }).catch(() => {});
     }
   }
 }
 
 cmdInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    runCommand(cmdInput.value);
-    cmdInput.blur();
-  } else if (e.key === 'Escape') {
-    cmdResults.classList.add('hidden');
-    cmdInput.blur();
-  }
+  if (e.key === 'Enter') { runCommand(cmdInput.value); cmdInput.blur(); }
+  else if (e.key === 'Escape') { cmdResults.classList.add('hidden'); cmdInput.blur(); }
 });
 
 cmdInput.addEventListener('input', () => {
@@ -557,9 +771,7 @@ cmdInput.addEventListener('input', () => {
     const itemHits = (n.physical_items || []).filter((i) => `${i.name} ${(i.tags || []).join(' ')}`.toLowerCase().includes(q));
     const fileHits = (n.digital_files || []).filter((f) => `${f.name} ${f.path}`.toLowerCase().includes(q));
     const selfHit = `${n.label} ${n.room} ${n.id} ${n.notes || ''}`.toLowerCase().includes(q);
-    if (selfHit || itemHits.length || fileHits.length) {
-      matches.push({ n, itemHits, fileHits });
-    }
+    if (selfHit || itemHits.length || fileHits.length) matches.push({ n, itemHits, fileHits });
   }
   if (!matches.length) {
     cmdResults.innerHTML = `<div class="cmd-hit"><div class="cmd-hit-title">Press Enter to run natural-language command</div><div class="cmd-hit-sub">e.g. "put ESP32 x4 on studio shelf 2" or "bom smart lamp"</div></div>`;
@@ -573,26 +785,23 @@ cmdInput.addEventListener('input', () => {
       </div>
     `).join('');
     cmdResults.querySelectorAll('.cmd-hit[data-nid]').forEach((el) => {
-      el.addEventListener('click', () => {
-        cmdResults.classList.add('hidden');
-        selectNode(el.dataset.nid, true);
-      });
+      el.addEventListener('click', () => { cmdResults.classList.add('hidden'); selectNode(el.dataset.nid, true); });
     });
   }
   cmdResults.classList.remove('hidden');
 });
 
 window.addEventListener('keydown', (e) => {
-  if (document.activeElement === cmdInput || document.activeElement === inspNotes || document.activeElement.tagName === 'INPUT') return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
-    e.preventDefault();
-    cmdInput.focus();
-    cmdInput.select();
+    e.preventDefault(); cmdInput.focus(); cmdInput.select();
   }
+  if (e.key === 'Tab') { e.preventDefault(); toggleAgentDrawer(); }
   if (e.code === 'KeyP') toggleScanCloud();
 });
 
-// 3D Raycast Click Selection of Apartment Pins
+// Raycast Click Selection of Apartment Pins
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let downPos = { x: 0, y: 0 };
@@ -604,12 +813,10 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(pinMeshes, false);
-  if (hits.length > 0) {
-    selectNode(hits[0].object.userData.nodeId, true);
-  }
+  if (hits.length > 0) selectNode(hits[0].object.userData.nodeId, true);
 });
 
-// Sidebar Quick Buttons
+// Sidebar Controls
 function toggleGuestMode() {
   guestMode = !guestMode;
   const btn = document.getElementById('btn-guest-mode');
@@ -618,13 +825,11 @@ function toggleGuestMode() {
   if (guestMode && selectedNodeId) {
     const cur = homeGraph.nodes.find((n) => n.id === selectedNodeId);
     if (cur?.privacy === 'private') {
-      inspector.classList.add('hidden');
-      highlightGroup.visible = false;
-      selectedNodeId = null;
+      inspector.classList.add('hidden'); highlightGroup.visible = false; selectedNodeId = null;
     }
   }
   refreshUI(true);
-  showToast(guestMode ? 'Guest View: Hall Closet Vault & Studio Office are now private & locked!' : 'Owner View: All private rooms & hardware unlocked.');
+  showToast(guestMode ? 'Guest View: Hall Closet Vault & Studio Office locked!' : 'Owner View: All private rooms unlocked.');
 }
 document.getElementById('btn-guest-mode').addEventListener('click', toggleGuestMode);
 
@@ -646,9 +851,7 @@ document.querySelectorAll('.mood-btn').forEach((btn) => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Persistent Background Stereo Engine (Web Audio Ambient Chords)
-// ---------------------------------------------------------------------------
+// Persistent Stereo Engine
 let stereoCtx = null;
 let stereoGain = null;
 let stereoTimer = null;
@@ -701,20 +904,18 @@ function toggleStereo() {
     clearInterval(stereoTimer);
   }
 }
-
 document.getElementById('stereo-play-btn').addEventListener('click', toggleStereo);
 document.getElementById('stereo-vol').addEventListener('input', (e) => {
   if (stereoGain) stereoGain.gain.value = Number(e.target.value) / 100;
 });
 
-// ---------------------------------------------------------------------------
-// Boot & Animation Loop
-// ---------------------------------------------------------------------------
+// Boot
 fetch('/api/graph')
   .then((r) => r.json())
   .then((g) => {
     homeGraph = g;
     applyMood(g.lighting_mood || 'afternoon');
+    if (g.custom_wall_art) applyWallArtTexture(g.custom_wall_art);
     if (guestMode) {
       const btn = document.getElementById('btn-guest-mode');
       btn.textContent = 'Guest View';
@@ -723,9 +924,7 @@ fetch('/api/graph')
     buildPins();
     renderSidebar();
   })
-  .catch(() => {
-    statsLine.textContent = 'Start scripts/home_os_server.py to enable persistence';
-  });
+  .catch(() => { statsLine.textContent = 'Start scripts/home_os_server.py to enable persistence'; });
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -737,24 +936,16 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const t = clock.elapsedTime;
-
-  // Bob spatial markers
   for (const m of pinMeshes) {
     m.position.y = m.userData.baseY + Math.sin(t * 2.4 + m.userData.baseY * 4) * 0.03;
   }
-
-  // Pulse active shelf highlight ring
   if (highlightGroup.visible) {
     const s = 1.0 + Math.sin(t * 5.0) * 0.16;
     ringMesh.scale.set(s, s, 1);
   }
-
-  // Printer test sweep
   if (printerHeadMesh && performance.now() < printerSweepUntil) {
     printerHeadMesh.position.z = 4.15 + Math.sin(t * 20) * 0.13;
   }
-
-  // Smooth fly-to easing
   if (flyAnim) {
     const u = Math.min(1, (performance.now() - flyAnim.t0) / flyAnim.dur);
     const e = 1 - Math.pow(1 - u, 3);
@@ -762,7 +953,6 @@ function animate() {
     controls.target.lerpVectors(flyAnim.startLook, flyAnim.endLook, e);
     if (u >= 1) flyAnim = null;
   }
-
   controls.update();
   renderer.render(scene, camera);
 }

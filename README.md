@@ -16,10 +16,10 @@ Beyond the Escape Room and 3D Gaussian Splat, `vaughn-apt` is evolving into a **
 | :--- | :--- | :--- |
 | **Phase 0** | 3D Video Reconstruction, Crisp 25k-step 3DGS, Modular Blender 5.3 Level, `.glb`/`.fbx`, Escape Room | ✅ Complete |
 | **Phase 1** | Spatial Home OS MVP (`data/home_graph.json`, `scripts/home_os_server.py`, `web/home_os.html` — unified `apt://` shelf/drawer/closet atoms + bits, natural-language command & BOM search, fly-to spotlight, Owner/Guest privacy view, Living Room TV, persistent Stereo, live Whiteboard) | ✅ Complete |
-| **Phase 2** | Local Filesystem Bridge & Vision Photo-to-Inventory Drawer Capture | ⏳ Planned |
-| **Phase 3** | Cyber-Physical Hardware Bridge (3D Printer Farm, Smart Lamps / MQTT, WLED Pick-to-Light, Raspberry Pis) | ⏳ Planned |
-| **Phase 4** | Room-Aware AI Agent & BOM Feasibility Planner | ⏳ Planned |
-| **Phase 5** | "Guests" (Front Door Comms Concierge, Multiplayer Co-Presence, Per-Room Privacy) | ⏳ Planned |
+| **Phase 2** | Local Filesystem Bridge (mount & browse real PC folders, open natively, pin to shelves), Live 3D Wall Art Swapper, Drawer Photo Capture + Optional Gemini Vision Auto-Tagging | ✅ Complete |
+| **Phase 3** | Cyber-Physical Hardware Bridge (WLED Pick-to-Light Shelf LEDs, Moonraker/OctoPrint 3D Printer Telemetry, Smart Lamp & Webhook Triggers) | ✅ Complete |
+| **Phase 4** | Room-Aware Spatial Home Agent (`Tab`) & Project BOM Feasibility Engine (Offline Spatial Engine + Optional Gemini 2.5 Flash Upgrade) | ✅ Complete |
+| **Phase 5** | "Guests" (Front Door Comms Concierge, Multiplayer WebSocket Co-Presence, Generalized Scan-Your-Home Pipeline) | ⏳ Up Next |
 
 ---
 

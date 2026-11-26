@@ -40,6 +40,7 @@
     </div>
 
     <nav class="mode-nav">
+      <button id="btn-agent-toggle" class="nav-pill agent-pill" title="Open Room-Aware Spatial Agent (Tab)">🤖 Agent</button>
       <a class="nav-pill active" href="home_os.html">Home OS</a>
       <a class="nav-pill" href="index.html">Escape Room</a>
       <a class="nav-pill" href="splat.html">3DGS Splat</a>
@@ -88,6 +89,30 @@
     <input id="stereo-vol" type="range" min="0" max="100" value="35" title="Stereo Volume" />
   </div>
 
+  <!-- Floating Room-Aware Spatial Agent Drawer (Bottom Center-Right) -->
+  <aside id="agent-drawer" class="agent-drawer hidden">
+    <div class="agent-head">
+      <div>
+        <div class="agent-title">🤖 SPATIAL HOME AGENT</div>
+        <div id="agent-context" class="agent-ctx">Context: Full Apartment</div>
+      </div>
+      <button id="agent-close" class="icon-close">✕</button>
+    </div>
+    <div class="agent-chips">
+      <button class="chip-btn" data-q="What's here?">What's here?</button>
+      <button class="chip-btn" data-q="bom smart lamp">BOM: Smart Lamp</button>
+      <button class="chip-btn" data-q="bom robot">BOM: Robot</button>
+      <button class="chip-btn" data-q="inventory summary">Summary</button>
+    </div>
+    <div id="agent-log" class="agent-log">
+      <div class="agent-msg bot">Hi Vaughn! Ask me where any hardware or file lives, run a BOM check across your drawers, or tell me to put parts on any shelf.</div>
+    </div>
+    <form id="agent-form" class="agent-form">
+      <input id="agent-input" type="text" placeholder="Ask your Home Agent (e.g. 'do I have parts for a plant monitor?')..." autocomplete="off" />
+      <button type="submit" class="btn-add">Send</button>
+    </form>
+  </aside>
+
   <!-- Right Spatial Inspector Drawer -->
   <aside id="inspector" class="inspector hidden">
     <div class="insp-head">
@@ -103,8 +128,30 @@
     </div>
 
     <div class="insp-body">
-      <!-- Dynamic Special Panel (TV / Whiteboard / Printers / Routines / Guests) -->
+      <!-- Dynamic Special Panel (TV / Wall Art / Printers / Routines / Guests) -->
       <div id="insp-special" class="special-box hidden"></div>
+
+      <!-- Drawer / Shelf Real Photo Capture (Phase 2) -->
+      <section class="insp-section">
+        <div class="sec-head">
+          <span>DRAWER / SHELF PHOTO CAPTURE</span>
+          <label class="mini-btn accent" style="flex:0 0 auto;cursor:pointer;">
+            📷 Upload Photo
+            <input id="input-shelf-photo" type="file" accept="image/*" style="display:none;" />
+          </label>
+        </div>
+        <div id="shelf-photo-wrap" class="photo-wrap hidden">
+          <img id="shelf-photo-img" src="" alt="Shelf Photo" />
+        </div>
+        <div class="quick-chips" id="maker-quick-chips">
+          <button type="button" class="qchip" data-item="Arduino Uno">+Arduino</button>
+          <button type="button" class="qchip" data-item="Digilent Basys 3 FPGA">+Basys 3</button>
+          <button type="button" class="qchip" data-item="Raspberry Pi">+RPi</button>
+          <button type="button" class="qchip" data-item="ESP32-S3">+ESP32</button>
+          <button type="button" class="qchip" data-item="Breadboard & IC Kit">+Breadboard</button>
+          <button type="button" class="qchip" data-item="Sensor Module">+Sensor</button>
+        </div>
+      </section>
 
       <!-- Physical Reality (Atoms) -->
       <section class="insp-section">
@@ -134,11 +181,44 @@
         </form>
       </section>
 
+      <!-- Mounted Local Windows Folder Browser (Phase 2) -->
+      <section class="insp-section">
+        <div class="sec-head">
+          <span>LOCAL FOLDER MOUNT</span>
+          <button id="btn-fs-up" class="mini-btn" style="flex:0 0 auto;">↑ Up</button>
+        </div>
+        <form id="form-mount-folder" class="inline-form">
+          <input id="input-mount-folder" type="text" placeholder="Local folder (e.g. docs, scripts, C:\Users\...)" />
+          <button type="submit" class="btn-add">Mount</button>
+        </form>
+        <ul id="fs-list" class="item-list fs-list"></ul>
+      </section>
+
+      <!-- Cyber-Physical Live Hardware Bridge (Phase 3) -->
+      <section class="insp-section">
+        <div class="sec-head">
+          <span>LIVE HARDWARE BRIDGE (IOT / WLED / PRINTERS)</span>
+          <span id="dev-count" class="count-pill">0</span>
+        </div>
+        <ul id="dev-list" class="item-list"></ul>
+        <form id="form-add-device" class="inline-form">
+          <select id="input-dev-type" class="stereo-select">
+            <option value="wled_pick_to_light">WLED Shelf</option>
+            <option value="3d_printer">3D Printer</option>
+            <option value="smart_lamp">Smart Lamp</option>
+            <option value="webhook">Webhook</option>
+          </select>
+          <input id="input-dev-label" type="text" placeholder="Label" required />
+          <input id="input-dev-ep" type="text" placeholder="http://192.168.1.x" />
+          <button type="submit" class="btn-add">+ Link</button>
+        </form>
+      </section>
+
       <!-- Spatial Notes / Whiteboard -->
       <section class="insp-section">
         <div class="sec-head">
           <span>SPATIAL NOTES</span>
-          <button id="btn-save-notes" class="mini-btn accent">Save Notes</button>
+          <button id="btn-save-notes" class="mini-btn accent" style="flex:0 0 auto;">Save Notes</button>
         </div>
         <textarea id="insp-notes" rows="4" placeholder="Notes pinned to this exact spot..."></textarea>
       </section>
