@@ -41,10 +41,12 @@
     </div>
 
     <nav class="mode-nav">
+      <button id="btn-vibe-room" class="nav-pill" style="border-color:#ff3e9d;color:#ff8ec7;" title="Open 3D Interior Vibe-Room Designer (Local Ollama + Collision Verifier)">✨ Vibe Room</button>
       <button id="btn-guests-toggle" class="nav-pill guest-pill" title="Open Guests, Doorbell Comms &amp; Lounge Chat">👥 Guests (<span id="guest-count">1</span>)</button>
       <button id="btn-agent-toggle" class="nav-pill agent-pill" title="Open Room-Aware Spatial Agent (Tab)">🤖 Agent</button>
-      <button id="btn-settings" class="nav-pill" title="Hardware, Gemini Vision Key &amp; Backup Settings" style="border:none;background:transparent;cursor:pointer;">⚙</button>
+      <button id="btn-settings" class="nav-pill" title="Hardware, Ollama/Gemini AI &amp; Backup Settings" style="border:none;background:transparent;cursor:pointer;">⚙</button>
       <a class="nav-pill active" href="home_os.html">Home OS</a>
+      <a class="nav-pill" href="http://localhost:8770/web/index.html" target="_blank" rel="noopener" style="border-color:#00f0ff;color:#6ef6ff;">🌐 Fraymus World ↗</a>
       <a class="nav-pill" href="index.html">Escape Room</a>
       <a class="nav-pill" href="splat.html">3DGS Splat</a>
     </nav>
@@ -124,6 +126,31 @@
     <form id="lounge-chat-form" class="agent-form">
       <input id="lounge-chat-input" type="text" placeholder="Chat with everyone in the apartment..." autocomplete="off" />
       <button type="submit" class="btn-add">Send</button>
+    </form>
+  </aside>
+
+  <!-- Phase 13B: 3D Interior Vibe-Room Designer Drawer (Local Ollama + Collision Verifier) -->
+  <aside id="vibe-room-drawer" class="agent-drawer hidden" style="right:20px; width:410px;">
+    <div class="agent-head">
+      <div>
+        <div class="agent-title" style="color:#ff8ec7;">✨ 3D VIBE-ROOM DESIGNER (LOCAL OLLAMA)</div>
+        <div id="vibe-room-status" class="agent-ctx">Closed-ID Interior Prefabs · Collision Verifier: READY</div>
+      </div>
+      <button id="vibe-room-close" class="icon-close">✕</button>
+    </div>
+    <div class="agent-chips">
+      <button class="chip-btn vibe-chip" data-vp="Add an ESD soldering bench and dual-screen holo monitor rig in the studio">Studio Soldering Rig</button>
+      <button class="chip-btn vibe-chip" data-vp="Add a contactless cyber espresso bar and neon floor lamp in the living room">Espresso + Neon Lamp</button>
+      <button class="chip-btn vibe-chip" data-vp="Add a modular synth rack and bioluminescent bonsai planter">Synth + Bonsai</button>
+      <button class="chip-btn" id="btn-vibe-room-clear" style="color:#ff8095;">Clear Props</button>
+    </div>
+    <div id="vibe-room-log" class="agent-log" style="max-height:110px;">
+      <div class="agent-msg bot">Describe furniture or maker gear to place inside your real 3D apartment twin! Powered by local Ollama + AABB collision verification.</div>
+    </div>
+    <ul id="vibe-room-props-list" class="item-list" style="padding:0 12px 8px; max-height:120px; overflow-y:auto;"></ul>
+    <form id="vibe-room-form" class="agent-form">
+      <input id="vibe-room-input" type="text" placeholder="e.g. 'Add mini arcade and acoustic lounge chair'..." autocomplete="off" />
+      <button type="submit" class="btn-add">Build</button>
     </form>
   </aside>
 

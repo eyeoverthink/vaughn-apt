@@ -29,6 +29,7 @@ blender/*.blend2
 
 # Secrets / local environment keys
 .env
+data/vibe_room_props.json
 
 # OS noise
 Thumbs.db

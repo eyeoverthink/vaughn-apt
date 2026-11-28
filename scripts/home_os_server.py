@@ -20,10 +20,199 @@ from urllib.parse import parse_qs, urlparse
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 GRAPH_PATH = PROJECT_DIR / "data" / "home_graph.json"
+VIBE_PROPS_PATH = PROJECT_DIR / "data" / "vibe_room_props.json"
 ENV_PATH = PROJECT_DIR / ".env"
 SHELF_PHOTOS_DIR = PROJECT_DIR / "data" / "shelf_photos"
 CUSTOM_ART_DIR = PROJECT_DIR / "textures" / "custom"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
+OLLAMA_BASE = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
+FRAYMUS_WORLD_BASE = os.environ.get("FRAYMUS_WORLD_URL", "http://127.0.0.1:8770").rstrip("/")
+
+VIBE_INTERIOR_CATALOG = [
+    {"id": "int_01", "name": "ESD Soldering & Oscilloscope Bench", "room": "Studio / Extra Bedroom", "bbox": [1.3, 0.9, 0.7], "pos_default": [-2.4, 0.0, 4.2], "color": "#2a5d67", "accent": "#00f0ff", "kind": "bench"},
+    {"id": "int_02", "name": "Modular Synth & MIDI Rack", "room": "Music Production Nook", "bbox": [1.1, 1.35, 0.55], "pos_default": [1.8, 0.0, 2.2], "color": "#2b2048", "accent": "#ff3e9d", "kind": "synth"},
+    {"id": "int_03", "name": "Contactless Cyber Espresso Bar", "room": "Corner Living Room", "bbox": [1.2, 1.0, 0.6], "pos_default": [-1.2, 0.0, -3.6], "color": "#8f5633", "accent": "#ffcc00", "kind": "espresso"},
+    {"id": "int_04", "name": "Neon Cyberpunk Floor Lamp", "room": "Corner Living Room", "bbox": [0.4, 1.85, 0.4], "pos_default": [0.5, 0.0, -4.6], "color": "#1c2233", "accent": "#00f0ff", "kind": "lamp"},
+    {"id": "int_05", "name": "Bioluminescent Bonsai Planter", "room": "Dining Area", "bbox": [0.65, 1.05, 0.65], "pos_default": [-1.8, 0.0, 0.4], "color": "#3bd671", "accent": "#c87d4b", "kind": "plant"},
+    {"id": "int_06", "name": "Dual-Screen Holo Dev Monitor Rig", "room": "Studio / Extra Bedroom", "bbox": [1.1, 1.25, 0.5], "pos_default": [-1.2, 0.0, 4.8], "color": "#141a2e", "accent": "#58d5ff", "kind": "monitor"},
+    {"id": "int_07", "name": "Tabletop 8-Bit Mini Arcade", "room": "Corner Living Room", "bbox": [0.65, 1.45, 0.65], "pos_default": [0.9, 0.0, -3.2], "color": "#3b2478", "accent": "#ff3e9d", "kind": "arcade"},
+    {"id": "int_08", "name": "Acoustic Studio Lounge Chair", "room": "Corner Living Room", "bbox": [0.9, 0.88, 0.9], "pos_default": [-0.3, 0.0, -2.5], "color": "#394159", "accent": "#ffcc00", "kind": "chair"},
+]
+VIBE_INTERIOR_BY_ID = {p["id"]: p for p in VIBE_INTERIOR_CATALOG}
+
+
+def probe_ollama_models(timeout: float = 1.2) -> list[str]:
+    try:
+        with urllib.request.urlopen(f"{OLLAMA_BASE}/api/tags", timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+        names = [m.get("name", "") for m in data.get("models", []) if m.get("name")]
+        priority = ["fraynix-ultimate:8b-64k", "niles-fraymus:v9", "qwen3:8b", "llama3.1:8b", "hermes3:8b"]
+        ranked = [p for p in priority if p in names] + [n for n in names if n not in priority]
+        return ranked
+    except Exception:
+        return []
+
+
+def load_vibe_room_props() -> list[dict]:
+    if not VIBE_PROPS_PATH.exists():
+        return []
+    try:
+        raw = json.loads(VIBE_PROPS_PATH.read_text(encoding="utf-8"))
+        return raw if isinstance(raw, list) else []
+    except Exception:
+        return []
+
+
+def save_vibe_room_props(props: list[dict]) -> None:
+    VIBE_PROPS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    VIBE_PROPS_PATH.write_text(json.dumps(props[-24:], indent=2), encoding="utf-8")
+
+
+def verify_interior_collisions(props: list[dict]) -> dict:
+    cols = []
+    for i in range(len(props)):
+        a = props[i]
+        for j in range(i + 1, len(props)):
+            b = props[j]
+            dx = abs(a["pos"][0] - b["pos"][0])
+            dz = abs(a["pos"][2] - b["pos"][2])
+            min_x = (a["bbox"][0] + b["bbox"][0]) * 0.42
+            min_z = (a["bbox"][2] + b["bbox"][2]) * 0.42
+            if dx < min_x and dz < min_z:
+                cols.append({"a": a["uid"], "b": b["uid"]})
+    return {"pass": len(cols) == 0, "collisions": cols}
+
+
+def design_vibe_room_layout(prompt: str) -> dict:
+    """Phase 13B: Closed-ID collision-verified 3D Interior Vibe-Room Designer powered by local Ollama."""
+    existing = load_vibe_room_props()
+    low = (prompt or "").lower()
+    chosen_ids: list[str] = []
+    source = "deterministic_room_designer"
+
+    models = probe_ollama_models(timeout=1.2)
+    if models:
+        try:
+            sys_p = (
+                "You are the 3D Interior Vibe-Room Designer inside vaughn-apt. "
+                "Pick 1-3 prop IDs ONLY from the provided catalog that match the user's request and suggest collision-free floor [x, 0, z] coordinates "
+                "(apartment bounds x in [-3.2, 2.8], z in [-5.8, 5.1]). "
+                'Respond ONLY in strict JSON: {"note": "<1 short sentence>", "placements": [{"id": "int_01", "pos": [-2.2, 0, 4.2], "rot_y": 0}]}.'
+            )
+            usr_p = json.dumps({"prompt": prompt, "catalog": VIBE_INTERIOR_CATALOG, "existing_count": len(existing)})
+            out = http_json(
+                f"{OLLAMA_BASE}/api/chat",
+                {
+                    "model": models[0],
+                    "stream": False,
+                    "format": "json",
+                    "options": {"temperature": 0.25, "num_predict": 220},
+                    "messages": [{"role": "system", "content": sys_p}, {"role": "user", "content": usr_p}],
+                },
+                timeout=14.0,
+            )
+            parsed = json.loads((out.get("message") or {}).get("content") or "{}")
+            placements = parsed.get("placements") or []
+            added = []
+            for pl in placements[:4]:
+                pid = str(pl.get("id") or "")
+                if pid in VIBE_INTERIOR_BY_ID:
+                    spec = VIBE_INTERIOR_BY_ID[pid]
+                    raw_p = pl.get("pos") if isinstance(pl.get("pos"), list) and len(pl.get("pos")) == 3 else spec["pos_default"]
+                    px = max(-3.1, min(2.7, float(raw_p[0])))
+                    pz = max(-5.6, min(5.0, float(raw_p[2])))
+                    added.append({
+                        "uid": f"vroom_{int(time.time() * 1000) % 100000}_{len(existing) + len(added)}",
+                        "id": spec["id"],
+                        "name": spec["name"],
+                        "room": spec["room"],
+                        "kind": spec["kind"],
+                        "color": spec["color"],
+                        "accent": spec["accent"],
+                        "bbox": list(spec["bbox"]),
+                        "pos": [round(px, 2), 0.0, round(pz, 2)],
+                        "rot_y": int(pl.get("rot_y") or 0) % 360,
+                    })
+            if added:
+                existing.extend(added)
+                # Deterministic collision separation pass
+                for _ in range(8):
+                    chk = verify_interior_collisions(existing)
+                    if chk["pass"]:
+                        break
+                    for c in chk["collisions"]:
+                        b = next((x for x in existing if x["uid"] == c["b"]), None)
+                        if b:
+                            b["pos"][0] = round(max(-3.1, min(2.7, b["pos"][0] + 0.75)), 2)
+                            b["pos"][2] = round(max(-5.6, min(5.0, b["pos"][2] + 0.55)), 2)
+                save_vibe_room_props(existing)
+                return {
+                    "ok": True,
+                    "source": f"ollama:{models[0]}",
+                    "note": str(parsed.get("note") or f"Added {len(added)} verified interior prop(s).")[:220],
+                    "added": added,
+                    "props": existing,
+                    "verifier": verify_interior_collisions(existing),
+                }
+        except Exception:
+            pass
+
+    # Deterministic keyword fallback
+    if any(k in low for k in ("solder", "bench", "maker", "electronics", "studio")):
+        chosen_ids.append("int_01")
+    if any(k in low for k in ("synth", "midi", "music", "audio")):
+        chosen_ids.append("int_02")
+    if any(k in low for k in ("espresso", "coffee", "bar", "cafe")):
+        chosen_ids.append("int_03")
+    if any(k in low for k in ("lamp", "light", "neon", "glow")):
+        chosen_ids.append("int_04")
+    if any(k in low for k in ("bonsai", "plant", "tree", "green")):
+        chosen_ids.append("int_05")
+    if any(k in low for k in ("monitor", "screen", "desk", "holo")):
+        chosen_ids.append("int_06")
+    if any(k in low for k in ("arcade", "game", "retro")):
+        chosen_ids.append("int_07")
+    if any(k in low for k in ("chair", "lounge", "seat")):
+        chosen_ids.append("int_08")
+    if not chosen_ids:
+        chosen_ids = ["int_03", "int_04"]
+
+    added = []
+    for idx, pid in enumerate(chosen_ids[:3]):
+        spec = VIBE_INTERIOR_BY_ID[pid]
+        pos = list(spec["pos_default"])
+        pos[0] = round(max(-3.1, min(2.7, pos[0] + idx * 0.15)), 2)
+        added.append({
+            "uid": f"vroom_{int(time.time() * 1000) % 100000}_{len(existing) + idx}",
+            "id": spec["id"],
+            "name": spec["name"],
+            "room": spec["room"],
+            "kind": spec["kind"],
+            "color": spec["color"],
+            "accent": spec["accent"],
+            "bbox": list(spec["bbox"]),
+            "pos": pos,
+            "rot_y": 0,
+        })
+    existing.extend(added)
+    for _ in range(8):
+        chk = verify_interior_collisions(existing)
+        if chk["pass"]:
+            break
+        for c in chk["collisions"]:
+            b = next((x for x in existing if x["uid"] == c["b"]), None)
+            if b:
+                b["pos"][0] = round(max(-3.1, min(2.7, b["pos"][0] + 0.75)), 2)
+                b["pos"][2] = round(max(-5.6, min(5.0, b["pos"][2] + 0.55)), 2)
+    save_vibe_room_props(existing)
+    return {
+        "ok": True,
+        "source": source,
+        "note": f"Placed {len(added)} collision-verified interior prop(s) in vaughn-apt.",
+        "added": added,
+        "props": existing,
+        "verifier": verify_interior_collisions(existing),
+    }
 
 
 def get_gemini_key() -> str:
@@ -365,6 +554,54 @@ def run_spatial_agent(graph: dict, message: str, current_node_id: str | None) ->
             "engine": "local-spatial",
         }
 
+    # Phase 13B: Local RTX 5070 Ollama Spatial Home OS Agent (aware of Home Graph + live FRAYMUS WORLD!)
+    ollama_models = probe_ollama_models(timeout=1.2)
+    if ollama_models:
+        compact_nodes = [
+            {
+                "id": n["id"],
+                "room": n["room"],
+                "label": n["label"],
+                "items": [f"{i['name']} x{i.get('qty', 1)}" for i in n.get("physical_items", [])][:8],
+                "files": [f["name"] for f in n.get("digital_files", [])][:5],
+            }
+            for n in graph.get("nodes", [])
+        ]
+        fraymus_note = ""
+        try:
+            with urllib.request.urlopen(f"{FRAYMUS_WORLD_BASE}/api/world/living", timeout=1.0) as fr:
+                fw = json.loads(fr.read().decode("utf-8", errors="replace"))
+                wm = fw.get("world_metrics") or {}
+                fraymus_note = f"FRAYMUS WORLD outside is LIVE ({wm.get('total_ticks', 0)} ticks, {wm.get('projects_completed', 0)} autonomous crew projects)."
+        except Exception:
+            pass
+        sys_prompt = (
+            "You are the Local RTX 5070 Spatial Home OS Agent inside Vaughn's 3D apartment (vaughn-apt), "
+            "bridged seamlessly to FRAYMUS WORLD outside. Reference exact rooms, shelves, physical parts, and apt:// URIs concisely (2-3 sentences). "
+            f"{fraymus_note}\nCurrent node: {current_node_id}\nHome Graph: {json.dumps(compact_nodes)}"
+        )
+        try:
+            out = http_json(
+                f"{OLLAMA_BASE}/api/chat",
+                {
+                    "model": ollama_models[0],
+                    "stream": False,
+                    "options": {"temperature": 0.4, "num_predict": 160},
+                    "messages": [{"role": "system", "content": sys_prompt}, {"role": "user", "content": msg}],
+                },
+                timeout=16.0,
+            )
+            reply = ((out.get("message") or {}).get("content") or "").strip()
+            if reply:
+                m_uri = re.search(r"apt://[a-z0-9/_-]+", reply)
+                return {
+                    "reply": reply[:520],
+                    "node_id": m_uri.group(0) if m_uri else (cur_node["id"] if cur_node else None),
+                    "engine": f"ollama:{ollama_models[0]}",
+                }
+        except Exception:
+            pass
+
     api_key = get_gemini_key()
     if api_key:
         compact_nodes = [{"id": n["id"], "room": n["room"], "label": n["label"], "items": [f"{i['name']} x{i.get('qty',1)}" for i in n.get("physical_items", [])], "files": [f["name"] for f in n.get("digital_files", [])]} for n in graph["nodes"]]
@@ -418,6 +655,10 @@ class HomeOSHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PROJECT_DIR), **kwargs)
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def send_json(self, payload: dict, status: int = 200):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
@@ -442,7 +683,22 @@ class HomeOSHandler(SimpleHTTPRequestHandler):
             g["studio_unlocked"] = GUEST_ROOM_ACCESS.get("studio_unlocked", False)
             return self.send_json(g)
         if parsed.path == "/api/health":
-            return self.send_json({"ok": True, "service": "vaughn-apt-home-os", "version": "phase-6-polished", "gemini_enabled": bool(get_gemini_key())})
+            omodels = probe_ollama_models(timeout=1.0)
+            return self.send_json({
+                "ok": True,
+                "service": "vaughn-apt-home-os",
+                "version": "phase-7-ollama-vibe",
+                "gemini_enabled": bool(get_gemini_key()),
+                "ollama_enabled": len(omodels) > 0,
+                "ollama_model": omodels[0] if omodels else None,
+                "vibe_props_count": len(load_vibe_room_props()),
+            })
+        if parsed.path == "/api/ollama/models":
+            omodels = probe_ollama_models(timeout=1.5)
+            return self.send_json({"ok": True, "available": len(omodels) > 0, "models": omodels})
+        if parsed.path == "/api/vibe/room-layout":
+            props = load_vibe_room_props()
+            return self.send_json({"ok": True, "props": props, "catalog": VIBE_INTERIOR_CATALOG, "verifier": verify_interior_collisions(props)})
         if parsed.path == "/api/hardware/poll":
             return self.send_json({"ok": True, "devices": poll_configured_hardware(load_graph())})
         if parsed.path == "/api/fs/list":
@@ -541,6 +797,13 @@ class HomeOSHandler(SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/agent":
             return self.send_json(run_spatial_agent(graph, body.get("message", ""), body.get("node_id")))
+
+        if parsed.path == "/api/vibe/room-layout":
+            return self.send_json(design_vibe_room_layout(body.get("prompt", "")))
+
+        if parsed.path == "/api/vibe/room-layout/clear":
+            save_vibe_room_props([])
+            return self.send_json({"ok": True, "props": [], "verifier": {"pass": True, "collisions": []}})
 
         if parsed.path == "/api/node/add-item":
             node = find_node(graph, body.get("node_id", ""))

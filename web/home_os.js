@@ -722,7 +722,7 @@ function appendAgentMsg(text, who) {
 }
 
 async function sendToAgent(msg) {
-  if (!msg.trim()) return;
+  if (!msg || !String(msg).trim()) return;
   appendAgentMsg(msg, 'user');
   const res = await apiPost('/api/agent', { message: msg, node_id: selectedNodeId });
   if (res.graph) { homeGraph = res.graph; refreshUI(false); }
@@ -739,8 +739,8 @@ document.getElementById('agent-form').addEventListener('submit', (e) => {
   agentInput.value = '';
   sendToAgent(txt);
 });
-document.querySelectorAll('.agent-chips .chip-btn').forEach((b) => {
-  b.addEventListener('click', () => sendToAgent(b.dataset.q));
+document.querySelectorAll('#agent-drawer .agent-chips .chip-btn').forEach((b) => {
+  b.addEventListener('click', () => { if (b.dataset.q) sendToAgent(b.dataset.q); });
 });
 
 // ---------------------------------------------------------------------------
@@ -962,7 +962,9 @@ document.getElementById('btn-settings').addEventListener('click', async () => {
   settingsModal.classList.remove('hidden');
   try {
     const h = await fetch('/api/health').then((r) => r.json());
-    geminiStatusEl.textContent = h.gemini_enabled ? 'Gemini 2.5 Active ✓' : 'Local Offline Mode';
+    geminiStatusEl.textContent = h.ollama_enabled
+      ? `Ollama: ${h.ollama_model} ✓`
+      : (h.gemini_enabled ? 'Gemini 2.5 Active ✓' : 'Local Offline Mode');
   } catch (_) {}
 });
 document.getElementById('settings-close').addEventListener('click', () => settingsModal.classList.add('hidden'));
@@ -1299,9 +1301,120 @@ document.getElementById('cowatch-join').addEventListener('click', () => {
 });
 document.getElementById('cowatch-hide').addEventListener('click', () => cowatchBanner.classList.add('hidden'));
 
+// ---------------------------------------------------------------------------
+// Phase 13B: 3D Interior Vibe-Room Designer (Local Ollama + Collision Verifier)
+// ---------------------------------------------------------------------------
+const vibeRoomGroup = new THREE.Group();
+scene.add(vibeRoomGroup);
+
+function buildInteriorVibePropMesh(prop) {
+  const g = new THREE.Group();
+  const [bw, bh, bd] = prop.bbox || [0.8, 0.9, 0.6];
+  const bodyMat = new THREE.MeshStandardMaterial({ color: prop.color || '#2a5d67', roughness: 0.45, metalness: 0.25 });
+  const accentMat = new THREE.MeshStandardMaterial({
+    color: prop.accent || '#00f0ff',
+    emissive: prop.accent || '#00f0ff',
+    emissiveIntensity: 0.55,
+    roughness: 0.25,
+  });
+
+  if (prop.kind === 'lamp') {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, bh * 0.85, 10), bodyMat);
+    pole.position.y = bh * 0.425;
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), accentMat);
+    bulb.position.y = bh * 0.9;
+    g.add(pole, bulb);
+  } else if (prop.kind === 'plant') {
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(bw * 0.36, bw * 0.28, bh * 0.38, 10), new THREE.MeshStandardMaterial({ color: prop.accent || '#c87d4b', roughness: 0.7 }));
+    pot.position.y = bh * 0.19;
+    const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(bw * 0.42, 0), bodyMat);
+    crown.position.y = bh * 0.68;
+    g.add(pot, crown);
+  } else {
+    const base = new THREE.Mesh(new THREE.BoxGeometry(bw, bh * 0.72, bd), bodyMat);
+    base.position.y = bh * 0.36;
+    base.castShadow = true;
+    const topStrip = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.92, bh * 0.14, bd * 0.85), accentMat);
+    topStrip.position.y = bh * 0.82;
+    g.add(base, topStrip);
+  }
+
+  g.position.set(prop.pos[0], prop.pos[1] || 0, prop.pos[2]);
+  g.rotation.y = ((prop.rot_y || 0) * Math.PI) / 180;
+  return g;
+}
+
+function renderVibeRoomProps(props, verifier = null) {
+  while (vibeRoomGroup.children.length > 0) vibeRoomGroup.remove(vibeRoomGroup.children[0]);
+  (props || []).forEach((p) => vibeRoomGroup.add(buildInteriorVibePropMesh(p)));
+
+  const listEl = document.getElementById('vibe-room-props-list');
+  const statusEl = document.getElementById('vibe-room-status');
+  if (statusEl) {
+    const vTxt = verifier ? (verifier.pass ? 'PASS ✅' : `WARN (${verifier.collisions.length})`) : 'READY';
+    statusEl.textContent = `${(props || []).length} Interior Prop(s) · Collision Verifier: ${vTxt}`;
+  }
+  if (listEl) {
+    listEl.innerHTML = (props || []).length
+      ? props.map((p) => `<li class="item-row"><div class="item-main"><div class="item-name">${p.name}</div><div class="item-sub">${p.room} · [${p.pos.join(', ')}]</div></div></li>`).join('')
+      : '<li class="item-row"><div class="item-sub">No Vibe-Room props placed yet. Pick a preset or describe what to build!</div></li>';
+  }
+}
+
+async function loadVibeRoomProps() {
+  try {
+    const r = await fetch('/api/vibe/room-layout').then((x) => x.json());
+    if (r.ok) renderVibeRoomProps(r.props, r.verifier);
+  } catch (_) {}
+}
+
+async function runVibeRoomDesign(promptText) {
+  const q = (promptText || '').trim();
+  if (!q) return;
+  const logEl = document.getElementById('vibe-room-log');
+  logEl.innerHTML += `<div class="agent-msg user">${q}</div>`;
+  logEl.scrollTop = logEl.scrollHeight;
+  try {
+    const r = await apiPost('/api/vibe/room-layout', { prompt: q });
+    if (r.ok) {
+      renderVibeRoomProps(r.props, r.verifier);
+      logEl.innerHTML += `<div class="agent-msg bot">[${r.source}] ${r.note} (Collision: ${r.verifier?.pass ? 'PASS ✅' : 'ADJUSTED'})</div>`;
+      logEl.scrollTop = logEl.scrollHeight;
+      showToast(`Vibe-Room updated (${r.props.length} props · ${r.source})`);
+    }
+  } catch (err) {
+    logEl.innerHTML += `<div class="agent-msg bot">Error: ${err.message}</div>`;
+  }
+}
+
+const vibeRoomDrawer = document.getElementById('vibe-room-drawer');
+document.getElementById('btn-vibe-room')?.addEventListener('click', () => {
+  vibeRoomDrawer?.classList.toggle('hidden');
+  loadVibeRoomProps();
+});
+document.getElementById('vibe-room-close')?.addEventListener('click', () => vibeRoomDrawer?.classList.add('hidden'));
+document.getElementById('vibe-room-form')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const inp = document.getElementById('vibe-room-input');
+  const val = inp.value;
+  inp.value = '';
+  runVibeRoomDesign(val);
+});
+document.querySelectorAll('.vibe-chip').forEach((btn) => {
+  btn.addEventListener('click', () => runVibeRoomDesign(btn.dataset.vp));
+});
+document.getElementById('btn-vibe-room-clear')?.addEventListener('click', async () => {
+  const r = await apiPost('/api/vibe/room-layout/clear', {});
+  if (r.ok) {
+    renderVibeRoomProps([], r.verifier);
+    showToast('Cleared Vibe-Room interior props.');
+  }
+});
+
 // Boot
 fetchGraphFromServer()
   .then(() => {
+    loadVibeRoomProps();
     if (guestMode) {
       const btn = document.getElementById('btn-guest-mode');
       btn.textContent = 'Guest View';
